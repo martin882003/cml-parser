@@ -24,7 +24,8 @@ def get_cml_files():
 def test_parse_cml_safe(file_path):
     print(f"Testing {file_path}")
     result = parse_file_safe(file_path)
-    assert result.error or result.model
+    assert result.error is None
+    assert result.model is not None
 
 
 def test_main_without_args(capsys):
@@ -88,3 +89,46 @@ def test_parse_file_safe_failure(tmp_path):
     assert result.model is None
     assert result.error is not None
     assert "ContextMap" in result.raw_text
+
+
+def test_bounded_context_realizes(tmp_path):
+    model_file = tmp_path / "bc_realizes.cml"
+    model_file.write_text("BoundedContext A implements X realizes Y {}", encoding="utf-8")
+    result = parse_file_safe(str(model_file))
+    assert result.error is None
+    assert result.model is not None
+
+
+def test_user_story_and_stakeholders(tmp_path):
+    content = """
+    BoundedContext Demo {}
+    UserStory Demo {
+        As a "User"
+            I want to do "X"
+        so that "I achieve Y"
+    }
+    Stakeholders of Demo {
+        StakeholderGroup Team {
+            Stakeholder Dev {
+                influence HIGH
+                interest HIGH
+            }
+        }
+    }
+    ValueRegister VR for Demo {
+        ValueCluster VC {
+            Value Speed {
+                Stakeholder Dev {
+                    consequences
+                        good "faster delivery"
+                        action "optimize" ACT
+                }
+            }
+        }
+    }
+    """
+    model_file = tmp_path / "user_story.cml"
+    model_file.write_text(content, encoding="utf-8")
+    result = parse_file_safe(str(model_file))
+    assert result.error is None
+    assert result.model is not None

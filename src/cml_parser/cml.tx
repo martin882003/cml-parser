@@ -6,7 +6,7 @@ Model:
 ;
 
 TopLevel:
-    ContextMap | BoundedContext | Domain | UseCase | StakeholderSection | ValueRegister
+    ContextMap | BoundedContext | Domain | UseCase | StakeholderSection | ValueRegister | UserStory
 ;
 
 Import:
@@ -25,7 +25,8 @@ ContextMap:
 ContextMapSetting:
     ('type' '='? type=ContextMapType) |
     ('state' '='? state=ContextMapState) |
-    ('contains' contains+=ID[','])
+    ('contains' contains+=ID[',']) |
+    ('realizes' realizes+=ID[','])
 ;
 
 ContextMapType:
@@ -79,7 +80,7 @@ DownstreamRights:
 ;
 
 BoundedContext:
-    'BoundedContext' name=ID ('implements' implements+=ID[','])? body=ContentBlock?
+    'BoundedContext' name=ID ('implements' implements+=ID[','])? ('realizes' realizes+=ID[','])? body=ContentBlock?
 ;
 
 BoundedContextAttribute:
@@ -191,17 +192,21 @@ Enum:
 ;
 
 Feature:
-    Repository | RawFeature | Attribute | Operation
+    Repository | Operation | Attribute | RawFeature
 ;
 
 RawFeature:
-    text=/[^{}\\n]+/
+    text=/[^{}]+/
 ;
 
 ContentBlock:
     '{'
-        items*=ContentItem
+        entries*=ContentEntry
     '}'
+;
+
+ContentEntry:
+    ContentItem | Feature
 ;
 
 ContentItem:
@@ -210,6 +215,8 @@ ContentItem:
     | DomainObject
     | Service
     | Repository
+    | BoundedContextAttribute
+    | Setting
     | UseCase
     | Subdomain
     | Module
@@ -224,11 +231,16 @@ OwnerDecl:
     'owner' ownerName=ID ';'?
 ;
 
+Setting:
+    'basePackage' '=' value=QualifiedName ';'?
+;
+
 Attribute:
     (visibility=Visibility)?
     (reference?='-')?
     type=Type
     name=ID
+    ('(' parameters*=Parameter[','] ')')?
     (key?='key')?
     ';'?
 ;
@@ -236,13 +248,11 @@ Attribute:
 Operation:
     (visibility=Visibility)?
     (def?='def' | '*')?
-    returnType=Type
-    name=ID
-    ('(' parameters*=Parameter[','] ')')?
-    ('throws' throws+=ID[','])?
-    ('publish' 'to' publishTo=ID)?
-    operationTransition=OperationTransition?
-    ';'?
+    Statement
+;
+
+Statement:
+    /[^{}]+/
 ;
 
 OperationTransition:
@@ -282,7 +292,25 @@ Service:
 ;
 
 Repository:
-    'Repository' name=ID repositoryBody=GenericBody?
+    'Repository' name=ID repositoryBody=RepositoryBody?
+;
+
+RepositoryBody:
+    '{'
+        methods*=RepositoryMethod
+    '}'
+;
+
+RepositoryMethod:
+    (visibility=Visibility)?
+    (
+        (reference?='@')? returnType=Type name=ID
+        |
+        name=ID
+    )
+    ('(' parameters*=Parameter[','] ')')?
+    ('throws' throws+=ID[','])?
+    ';'?
 ;
 
 Visibility:
@@ -389,6 +417,10 @@ UseCase:
     '}'
 ;
 
+UserStory:
+    'UserStory' name=ID body=ContentBlock?
+;
+
 UseCaseElement:
     UseCaseActor | UseCaseInteractions | UseCaseBenefit | UseCaseScope | UseCaseLevel
 ;
@@ -421,8 +453,12 @@ UseCaseLevel:
 
 StakeholderSection:
     'Stakeholders' 'of' context=[BoundedContext|ID] '{'
-        groups*=StakeholderGroup
+        stakeholders*=StakeholderItem
     '}'
+;
+
+StakeholderItem:
+    StakeholderGroup | Stakeholder
 ;
 
 StakeholderGroup:
@@ -438,14 +474,16 @@ StakeholderAttribute:
     ('interest' interest=ID) |
     ('priority' priority=ID) |
     ('impact' impact=ID) |
-    Consequences
+    Consequences |
+    ConsequenceItem |
+    RawFeature
 ;
 
 Consequences:
-    'consequences' consequenceLines*=ConsequenceLine
+    'consequences' consequenceLines*=ConsequenceItem
 ;
 
-ConsequenceLine:
+ConsequenceItem:
     ('good' | 'bad' | 'action') description=STRING (actionType=ID)?
 ;
 
