@@ -305,8 +305,8 @@ def test_object_reprs(tmp_path):
     # Check CML repr
     # Note: file path in repr depends on temp file name, so we check partial match or mock it
     cml_repr = repr(cml)
-    assert "context_maps=1[MarketplaceMultivendor]" in cml_repr
-    assert "domains=1[Marketplace]" in cml_repr
+    assert "context_maps=[MarketplaceMultivendor]" in cml_repr
+    assert "domains=[Marketplace]" in cml_repr
     assert "file=" in cml_repr
 
     # Check ParseResult repr
@@ -356,3 +356,26 @@ def test_subdomain_type_in_body(tmp_path):
     
     assert len(domain.generic) == 1
     assert domain.generic[0].name == "Gen"
+
+
+def test_subdomain_entities(tmp_path):
+    text = """
+    Domain MyDomain {
+        Subdomain Core {
+            type = CORE_DOMAIN
+            Entity Customer {}
+            Entity Product {}
+        }
+    }
+    """
+    file_path = tmp_path / "sd_entities.cml"
+    file_path.write_text(text, encoding="utf-8")
+    cml = parse_file_safe(str(file_path))
+    assert cml.parse_results.errors == []
+    
+    domain = cml.get_domain("MyDomain")
+    assert domain
+    core = domain.core[0]
+    assert len(core.entities) == 2
+    assert core.get_entity("Customer")
+    assert core.get_entity("Product")
