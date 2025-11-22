@@ -71,8 +71,7 @@ RelationshipAttribute:
     (
         ('implementationTechnology' '='? implementationTechnology=STRING) |
         ('downstreamRights' '='? downstreamRights=DownstreamRights) |
-        ('exposedAggregates' '='? exposedAggregates+=ID[',']) |
-        ('type' '='? relType=ID)
+        ('exposedAggregates' '='? exposedAggregates+=ID[','])
     )
 ;
 

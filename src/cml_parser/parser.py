@@ -73,7 +73,11 @@ class ParseResult:
     def errors_text(self) -> str:
         return "\n".join(e.pretty() for e in self.errors)
 
-    def tree(self, max_depth: Optional[int] = None) -> str:
+    @property
+    def tree(self) -> str:
+        return self.tree_view()
+
+    def tree_view(self, max_depth: Optional[int] = None) -> str:
         if self.model is None:
             return "<no model>"
         return render_tree(self.model, max_depth=max_depth)
@@ -83,12 +87,19 @@ class ParseResult:
             raise CmlSyntaxError(self.errors[0])
         return self
 
+    def summary(self) -> str:
+        if self.ok:
+            return f"Parsed successfully: {self.filename or ''}".strip()
+        return self.errors_text()
+
     # Convenience accessors for common top-level elements.
+    @property
     def contexts(self):
         if not self.model or not hasattr(self.model, "elements"):
             return []
         return [e for e in self.model.elements if e.__class__.__name__ == "BoundedContext"]
 
+    @property
     def relationships(self):
         if not self.model or not hasattr(self.model, "elements"):
             return []
@@ -98,10 +109,56 @@ class ParseResult:
                 rels.extend(getattr(e, "relationships", []))
         return rels
 
+    @property
     def use_cases(self):
         if not self.model or not hasattr(self.model, "elements"):
             return []
         return [e for e in self.model.elements if e.__class__.__name__ == "UseCase"]
+
+    def get_context(self, name: str):
+        return next((c for c in self.contexts if getattr(c, "name", None) == name), None)
+
+    def get_relationship(self, left: str, right: str):
+        def ctx_name(endpoint):
+            return getattr(endpoint, "contextName", None)
+        return next(
+            (
+                r
+                for r in self.relationships
+                if ctx_name(r.left) == left and ctx_name(r.right) == right
+            ),
+            None,
+        )
+
+    def get_relationships_by_type(self, rel_type: str):
+        rel_type_upper = rel_type.upper()
+        results = []
+        for r in self.relationships:
+            keyword = getattr(getattr(r, "connection", None), "keyword", None)
+            arrow = getattr(getattr(r, "connection", None), "arrow", None)
+            attrs = getattr(r, "attributes", []) or []
+            attr_type = next((getattr(a, "relType", None) for a in attrs if getattr(a, "relType", None)), None)
+            found = (
+                (keyword and str(keyword).upper() == rel_type_upper)
+                or (arrow and str(arrow).upper() == rel_type_upper)
+                or (attr_type and str(attr_type).upper() == rel_type_upper)
+            )
+            if found:
+                results.append(r)
+        return results
+
+    def get_context_relationships(self, context_name: str):
+        def ctx_name(endpoint):
+            return getattr(endpoint, "contextName", None)
+        return [
+            r for r in self.relationships
+            if ctx_name(r.left) == context_name or ctx_name(r.right) == context_name
+        ]
+
+    def __repr__(self) -> str:  # pragma: no cover - representation only
+        if self.ok and self.model is not None:
+            return f"<ParseResult ok model={_label(self.model)}>"
+        return f"<ParseResult errors={len(self.errors)}>"
 
 
 class CmlSyntaxError(Exception):
@@ -167,6 +224,7 @@ def _parse_internal(path: Optional[str], text: Optional[str], strict: bool) -> P
             model = mm.model_from_file(filename)
         else:
             model = mm.model_from_str(text, file_name=filename)
+        _apply_pretty_repr(model)
         result = ParseResult(
             model=model,
             errors=[],
@@ -251,6 +309,53 @@ def render_tree(obj: Any, max_depth: Optional[int] = None) -> str:
 
     walk(obj, 0)
     return "\n".join(lines)
+
+
+def _label(x: Any) -> str:
+    name = getattr(x, "name", None)
+    typ = x.__class__.__name__
+    return f"{typ}({name})" if name is not None else typ
+
+
+def _apply_pretty_repr(obj: Any, visited=None):
+    if visited is None:
+        visited = set()
+    if id(obj) in visited:
+        return
+    visited.add(id(obj))
+
+    if hasattr(obj, "__class__") and obj.__class__ not in (list, dict, str, int, float, bool, type(None)):
+        cls = obj.__class__
+        if not getattr(cls, "_has_cml_repr", False):
+            try:
+                if cls.__name__ == "Relationship":
+                    def rel_repr(self):
+                        def ctx(endpoint):
+                            return getattr(endpoint, "contextName", None)
+                        left = ctx(getattr(self, "left", None))
+                        right = ctx(getattr(self, "right", None))
+                        keyword = getattr(getattr(self, "connection", None), "keyword", None)
+                        arrow = getattr(getattr(self, "connection", None), "arrow", None)
+                        conn = keyword or arrow or "rel"
+                        return f"<Relationship {left} {conn} {right}>"
+                    cls.__repr__ = rel_repr
+                else:
+                    def generic_repr(self):
+                        return f"<{_label(self)}>"
+                    cls.__repr__ = generic_repr
+                cls._has_cml_repr = True
+            except TypeError:
+                pass
+
+    # Recurse children
+    if isinstance(obj, list):
+        for item in obj:
+            _apply_pretty_repr(item, visited)
+    elif hasattr(obj, "__dict__"):
+        for v in vars(obj).values():
+            if isinstance(v, (str, int, float, bool)) or v is None:
+                continue
+            _apply_pretty_repr(v, visited)
 
 
 def main(argv=None) -> int:
