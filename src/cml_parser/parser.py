@@ -4,6 +4,7 @@ from pathlib import Path
 from textx import metamodel_from_file
 from textx.exceptions import TextXSyntaxError
 from typing import List, Optional, Any, Union
+from types import SimpleNamespace
 import argparse
 import json
 import sys
@@ -308,6 +309,7 @@ def _parse_internal(path: Optional[str], text: Optional[str], strict: bool) -> P
         else:
             model = mm.model_from_str(text, file_name=filename)
         _apply_pretty_repr(model)
+        _link_model(model)
         result = ParseResult(
             model=model,
             errors=[],
@@ -439,6 +441,63 @@ def _apply_pretty_repr(obj: Any, visited=None):
             if isinstance(v, (str, int, float, bool)) or v is None:
                 continue
             _apply_pretty_repr(v, visited)
+
+
+def _link_model(model: Any):
+    """
+    Link domains to subdomains and contexts implementing them.
+    """
+    # collect domains, subdomains, contexts
+    domains = {}
+    subdomains = {}
+    contexts = {}
+    if hasattr(model, "elements"):
+        for el in model.elements:
+            if el.__class__.__name__ == "Domain":
+                domains[getattr(el, "name", None)] = el
+                el.subdomains = []
+            if el.__class__.__name__ == "BoundedContext":
+                contexts[getattr(el, "name", None)] = el
+                el.subdomains = []
+    # gather subdomains within domains
+    def walk_collect_subs(container, parent_domain=None):
+        for attr in ("items", "entries", "elements"):
+            if hasattr(container, attr):
+                for i in getattr(container, attr, []) or []:
+                    if i.__class__.__name__ == "Subdomain":
+                        subdomains[getattr(i, "name", None)] = i
+                        i.domain = parent_domain
+                        i.contexts = []
+                        if parent_domain is not None:
+                            parent_domain.subdomains.append(i)
+                    walk_collect_subs(i, parent_domain)
+        if hasattr(container, "body"):
+            body = getattr(container, "body")
+            if body:
+                walk_collect_subs(body, parent_domain)
+    for d in domains.values():
+        walk_collect_subs(d, d)
+
+    # link contexts to subdomains via implements
+    for ctx in contexts.values():
+        implements = getattr(ctx, "implements", []) or []
+        for impl_name in implements:
+            sd = subdomains.get(str(impl_name))
+            if sd:
+                ctx.subdomains.append(sd)
+                sd.contexts.append(ctx)
+        ctx.subdomain = ctx.subdomains[0] if getattr(ctx, "subdomains", None) else None
+
+    # add convenience getters to Domain and Subdomain and Context
+    for d in domains.values():
+        def get_subdomain(self, name):
+            return next((s for s in getattr(self, "subdomains", []) if getattr(s, "name", None) == name), None)
+        d.get_subdomain = get_subdomain.__get__(d, d.__class__)
+
+    for sd in subdomains.values():
+        def get_context(self, name):
+            return next((c for c in getattr(self, "contexts", []) if getattr(c, "name", None) == name), None)
+        sd.get_context = get_context.__get__(sd, sd.__class__)
 
 
 def main(argv=None) -> int:
