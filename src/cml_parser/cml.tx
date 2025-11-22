@@ -105,7 +105,7 @@ Domain:
 ;
 
 Subdomain:
-    'Subdomain' name=ID body=ContentBlock?
+    'Subdomain' name=ID ('type' type=SubdomainType)? body=ContentBlock?
 ;
 
 SubdomainType:
@@ -209,6 +209,11 @@ ContentEntry:
     ContentItem | Feature
 ;
 
+SubdomainAttribute:
+    ('type' '='? type=SubdomainType) |
+    ('domainVisionStatement' '='? domainVisionStatement=STRING)
+;
+
 ContentItem:
     ContentBlock
     | Aggregate
@@ -216,6 +221,7 @@ ContentItem:
     | Service
     | Repository
     | BoundedContextAttribute
+    | SubdomainAttribute
     | Setting
     | UseCase
     | Subdomain
