@@ -124,14 +124,14 @@ class ParseResult:
             if obj.__class__.__name__ == "Subdomain":
                 subs.append(obj)
                 return
-            if hasattr(obj, "items"):
-                for i in getattr(obj, "items", []):
-                    walk(i)
+            for attr in ("items", "entries", "elements"):
+                if hasattr(obj, attr):
+                    for i in getattr(obj, attr, []) or []:
+                        walk(i)
             if hasattr(obj, "body"):
                 body = getattr(obj, "body")
-                if hasattr(body, "items"):
-                    for i in getattr(body, "items", []):
-                        walk(i)
+                if body:
+                    walk(body)
         for d in self.domains:
             walk(d)
         return subs
