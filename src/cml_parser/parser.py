@@ -115,10 +115,25 @@ class ParseResult:
     @property
     def subdomains(self):
         subs = []
+        visited = set()
+
+        def walk(obj):
+            if id(obj) in visited:
+                return
+            visited.add(id(obj))
+            if obj.__class__.__name__ == "Subdomain":
+                subs.append(obj)
+                return
+            if hasattr(obj, "items"):
+                for i in getattr(obj, "items", []):
+                    walk(i)
+            if hasattr(obj, "body"):
+                body = getattr(obj, "body")
+                if hasattr(body, "items"):
+                    for i in getattr(body, "items", []):
+                        walk(i)
         for d in self.domains:
-            body = getattr(d, "body", None)
-            if body and hasattr(body, "items"):
-                subs.extend([i for i in body.items if i.__class__.__name__ == "Subdomain"])
+            walk(d)
         return subs
 
     @property
