@@ -172,9 +172,24 @@ class ParseResult:
         ]
 
     def __repr__(self) -> str:  # pragma: no cover - representation only
-        if self.ok and self.model is not None:
-            return f"<ParseResult ok model={_label(self.model)}>"
-        return f"<ParseResult errors={len(self.errors)}>"
+        if not self.ok or self.model is None:
+            return f"<ParseResult errors={len(self.errors)}>"
+        tokens = []
+        if self.filename:
+            tokens.append(f"file={Path(self.filename).name}")
+        ctxs = self.contexts
+        if ctxs:
+            names = ", ".join(getattr(c, "name", "") for c in ctxs[:3] if getattr(c, "name", None))
+            tokens.append(f"contexts={len(ctxs)}[{names}]")
+        rels = self.relationships
+        if rels:
+            tokens.append(f"rels={len(rels)}")
+        uses = self.use_cases
+        if uses:
+            tokens.append(f"use_cases={len(uses)}")
+        if not tokens:
+            tokens.append(f"model={_label(self.model)}")
+        return "<ParseResult " + " ".join(tokens) + ">"
 
 
 class CmlSyntaxError(Exception):
