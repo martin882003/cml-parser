@@ -96,6 +96,16 @@ def test_bounded_context_realizes(tmp_path):
     assert result.model is not None
 
 
+def test_source_repr_is_clean(tmp_path):
+    text = "ContextMap Demo {\n  contains A\n}\n"
+    file_path = tmp_path / "demo.cml"
+    file_path.write_text(text, encoding="utf-8")
+    result = parse_file_safe(str(file_path))
+    assert result.errors == []
+    # repr should show the actual text, not escaped newlines
+    assert repr(result.source) == text
+
+
 def test_user_story_and_stakeholders(tmp_path):
     content = """
     BoundedContext Demo {}

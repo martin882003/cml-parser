@@ -70,11 +70,6 @@ class ParseResult:
             data["model"] = model_to_data(self.model)
         return json.dumps(data, ensure_ascii=False, indent=2)
 
-    def summary(self) -> str:
-        if self.ok:
-            return f"Parsed successfully: {self.filename or ''}".strip()
-        return "\n".join(e.pretty() for e in self.errors)
-
     def errors_text(self) -> str:
         return "\n".join(e.pretty() for e in self.errors)
 
@@ -151,6 +146,16 @@ def parse_text(text: str, *, filename: Optional[str] = None, strict: bool = True
     return _parse_internal(path=filename, text=text, strict=strict)
 
 
+class DisplayStr(str):
+    """
+    A string that prints naturally in REPLs (repr == value).
+    Useful for showing source text without escape sequences.
+    """
+
+    def __repr__(self) -> str:  # pragma: no cover - trivial
+        return str(self)
+
+
 def _parse_internal(path: Optional[str], text: Optional[str], strict: bool) -> ParseResult:
     filename = str(path) if path else None
     source = text
@@ -162,7 +167,13 @@ def _parse_internal(path: Optional[str], text: Optional[str], strict: bool) -> P
             model = mm.model_from_file(filename)
         else:
             model = mm.model_from_str(text, file_name=filename)
-        result = ParseResult(model=model, errors=[], warnings=[], source=source, filename=filename)
+        result = ParseResult(
+            model=model,
+            errors=[],
+            warnings=[],
+            source=DisplayStr(source) if source is not None else None,
+            filename=filename,
+        )
         return result
     except Exception as exc:
         diagnostic = _diagnostic_from_exception(exc, filename, source)
