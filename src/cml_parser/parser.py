@@ -119,14 +119,14 @@ class ParseResult:
     def get_context(self, name: str):
         return next((c for c in self.contexts if getattr(c, "name", None) == name), None)
 
-    def get_relationship(self, left: str, right: str):
+    def get_relationship(self, a: str, b: str):
         def ctx_name(endpoint):
             return getattr(endpoint, "contextName", None)
         return next(
             (
                 r
                 for r in self.relationships
-                if ctx_name(r.left) == left and ctx_name(r.right) == right
+                if {ctx_name(r.left), ctx_name(r.right)} == {a, b}
             ),
             None,
         )
