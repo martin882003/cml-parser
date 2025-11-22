@@ -139,3 +139,21 @@ def test_user_story_and_stakeholders(tmp_path):
     result = parse_file_safe(str(model_file))
     assert result.errors == []
     assert result.model is not None
+
+
+def test_relationship_type_filtering(tmp_path):
+    text = """
+    ContextMap Demo {
+        A [ACL]-> B
+    }
+    BoundedContext A {}
+    BoundedContext B {}
+    """
+    file_path = tmp_path / "rel_filter.cml"
+    file_path.write_text(text, encoding="utf-8")
+    result = parse_file_safe(str(file_path))
+    assert result.errors == []
+    rels = result.get_relationships_by_type(parser_mod.RelationshipType.ACL)
+    assert len(rels) == 1
+    with pytest.raises(ValueError):
+        result.get_relationships_by_type("NOT_A_TYPE")

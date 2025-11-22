@@ -132,17 +132,32 @@ class ParseResult:
         )
 
     def get_relationships_by_type(self, rel_type: Union[str, "RelationshipType"]):
-        rel_type_upper = str(rel_type).upper()
+        allowed = {rt.value.upper() for rt in RelationshipType}
+        if isinstance(rel_type, RelationshipType):
+            rel_type_upper = rel_type.value.upper()
+        else:
+            rel_type_upper = str(rel_type).upper()
+        if rel_type_upper not in allowed:
+            raise ValueError(f"Unknown relationship type: {rel_type}")
         results = []
         for r in self.relationships:
             keyword = getattr(getattr(r, "connection", None), "keyword", None)
             arrow = getattr(getattr(r, "connection", None), "arrow", None)
             attrs = getattr(r, "attributes", []) or []
             attr_type = next((getattr(a, "relType", None) for a in attrs if getattr(a, "relType", None)), None)
+            roles = []
+            left = getattr(r, "left", None)
+            right = getattr(r, "right", None)
+            for endpoint in (left, right):
+                if endpoint:
+                    for roleset in (getattr(endpoint, "rolesBefore", None), getattr(endpoint, "rolesAfter", None)):
+                        if roleset:
+                            roles.extend([str(x).upper() for x in getattr(roleset, "roles", [])])
             found = (
                 (keyword and str(keyword).upper() == rel_type_upper)
                 or (arrow and str(arrow).upper() == rel_type_upper)
                 or (attr_type and str(attr_type).upper() == rel_type_upper)
+                or (rel_type_upper in roles)
             )
             if found:
                 results.append(r)
