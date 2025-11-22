@@ -24,7 +24,7 @@ def get_cml_files():
 def test_parse_cml_safe(file_path):
     print(f"Testing {file_path}")
     result = parse_file_safe(file_path)
-    assert result.error is None
+    assert result.errors == []
     assert result.model is not None
 
 
@@ -48,16 +48,13 @@ def test_main_with_file(capsys):
     tmp.unlink(missing_ok=True)
 
 
-def test_main_with_bad_file(capsys):
-    from pathlib import Path
-
-    tmp = Path(EXAMPLES_DIR) / "tmp_main_bad.cml"
+def test_main_with_bad_file(capsys, tmp_path):
+    tmp = tmp_path / "tmp_main_bad.cml"
     tmp.write_text("ContextMap { invalid", encoding="utf-8")
     exit_code = parser_mod.main([str(tmp)])
     captured = capsys.readouterr().err
     assert exit_code == 1
     assert "Error parsing" in captured
-    tmp.unlink(missing_ok=True)
 
 
 def test_module_cli_guard(monkeypatch):
@@ -77,7 +74,7 @@ def test_parse_file_safe_success():
     tmp = Path(EXAMPLES_DIR) / "tmp_safe_ok.cml"
     tmp.write_text("ContextMap Demo {}\n", encoding="utf-8")
     result = parse_file_safe(str(tmp))
-    assert result.error is None
+    assert result.errors == []
     assert result.model is not None
     tmp.unlink(missing_ok=True)
 
@@ -87,15 +84,15 @@ def test_parse_file_safe_failure(tmp_path):
     bad_file.write_text("ContextMap { invalid", encoding="utf-8")
     result = parse_file_safe(str(bad_file))
     assert result.model is None
-    assert result.error is not None
-    assert "ContextMap" in result.raw_text
+    assert result.errors
+    assert "ContextMap" in (result.source or "")
 
 
 def test_bounded_context_realizes(tmp_path):
     model_file = tmp_path / "bc_realizes.cml"
     model_file.write_text("BoundedContext A implements X realizes Y {}", encoding="utf-8")
     result = parse_file_safe(str(model_file))
-    assert result.error is None
+    assert result.errors == []
     assert result.model is not None
 
 
@@ -130,5 +127,5 @@ def test_user_story_and_stakeholders(tmp_path):
     model_file = tmp_path / "user_story.cml"
     model_file.write_text(content, encoding="utf-8")
     result = parse_file_safe(str(model_file))
-    assert result.error is None
+    assert result.errors == []
     assert result.model is not None
