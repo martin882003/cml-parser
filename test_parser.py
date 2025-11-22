@@ -157,3 +157,29 @@ def test_relationship_type_filtering(tmp_path):
     assert len(rels) == 1
     with pytest.raises(ValueError):
         result.get_relationships_by_type("NOT_A_TYPE")
+
+
+def test_context_subdomain_links(tmp_path):
+    text = """
+    Domain Demo {
+      Subdomain A {}
+      Subdomain B {}
+    }
+    BoundedContext X implements A, B {}
+    BoundedContext Y implements B {}
+    """
+    file_path = tmp_path / "links.cml"
+    file_path.write_text(text, encoding="utf-8")
+    result = parse_file_safe(str(file_path))
+    assert result.errors == []
+    ctx_x = result.get_context("X")
+    ctx_y = result.get_context("Y")
+    assert ctx_x and ctx_y
+    assert len(ctx_x.subdomains) == 2
+    assert ctx_x.get_subdomain("A")
+    assert ctx_x.get_subdomain("B")
+    sd_a = next(s for s in result.subdomains if s.name == "A")
+    sd_b = next(s for s in result.subdomains if s.name == "B")
+    assert ctx_x in sd_a.contexts
+    assert ctx_x in sd_b.contexts
+    assert ctx_y in sd_b.contexts

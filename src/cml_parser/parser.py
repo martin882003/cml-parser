@@ -487,6 +487,9 @@ def _link_model(model: Any):
                 ctx.subdomains.append(sd)
                 sd.contexts.append(ctx)
         ctx.subdomain = ctx.subdomains[0] if getattr(ctx, "subdomains", None) else None
+        def get_subdomain(self, name):
+            return next((s for s in getattr(self, "subdomains", []) if getattr(s, "name", None) == name), None)
+        ctx.get_subdomain = get_subdomain.__get__(ctx, ctx.__class__)
 
     # add convenience getters to Domain and Subdomain and Context
     for d in domains.values():
