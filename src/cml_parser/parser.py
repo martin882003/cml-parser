@@ -44,6 +44,18 @@ class ParseResult:
     def ok(self) -> bool:
         return not self.errors
 
+    @property
+    def has_errors(self) -> bool:
+        return bool(self.errors)
+
+    @property
+    def has_warnings(self) -> bool:
+        return bool(self.warnings)
+
+    @property
+    def first_error(self) -> Optional[Diagnostic]:
+        return self.errors[0] if self.errors else None
+
     def to_dict(self) -> dict:
         return {
             "ok": self.ok,
@@ -62,6 +74,39 @@ class ParseResult:
         if self.ok:
             return f"Parsed successfully: {self.filename or ''}".strip()
         return "\n".join(e.pretty() for e in self.errors)
+
+    def errors_text(self) -> str:
+        return "\n".join(e.pretty() for e in self.errors)
+
+    def tree(self, max_depth: Optional[int] = None) -> str:
+        if self.model is None:
+            return "<no model>"
+        return render_tree(self.model, max_depth=max_depth)
+
+    def raise_on_error(self):
+        if self.errors:
+            raise CmlSyntaxError(self.errors[0])
+        return self
+
+    # Convenience accessors for common top-level elements.
+    def contexts(self):
+        if not self.model or not hasattr(self.model, "elements"):
+            return []
+        return [e for e in self.model.elements if e.__class__.__name__ == "BoundedContext"]
+
+    def relationships(self):
+        if not self.model or not hasattr(self.model, "elements"):
+            return []
+        rels = []
+        for e in self.model.elements:
+            if e.__class__.__name__ == "ContextMap":
+                rels.extend(getattr(e, "relationships", []))
+        return rels
+
+    def use_cases(self):
+        if not self.model or not hasattr(self.model, "elements"):
+            return []
+        return [e for e in self.model.elements if e.__class__.__name__ == "UseCase"]
 
 
 class CmlSyntaxError(Exception):
