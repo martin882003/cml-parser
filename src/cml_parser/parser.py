@@ -101,6 +101,27 @@ class ParseResult:
         return [e for e in self.model.elements if e.__class__.__name__ == "BoundedContext"]
 
     @property
+    def context_maps(self):
+        if not self.model or not hasattr(self.model, "elements"):
+            return []
+        return [e for e in self.model.elements if e.__class__.__name__ == "ContextMap"]
+
+    @property
+    def domains(self):
+        if not self.model or not hasattr(self.model, "elements"):
+            return []
+        return [e for e in self.model.elements if e.__class__.__name__ == "Domain"]
+
+    @property
+    def subdomains(self):
+        subs = []
+        for d in self.domains:
+            body = getattr(d, "body", None)
+            if body and hasattr(body, "items"):
+                subs.extend([i for i in body.items if i.__class__.__name__ == "Subdomain"])
+        return subs
+
+    @property
     def relationships(self):
         if not self.model or not hasattr(self.model, "elements"):
             return []
@@ -177,10 +198,17 @@ class ParseResult:
         tokens = []
         if self.filename:
             tokens.append(f"file={Path(self.filename).name}")
-        ctxs = self.contexts
-        if ctxs:
-            names = ", ".join(getattr(c, "name", "") for c in ctxs[:3] if getattr(c, "name", None))
-            tokens.append(f"contexts={len(ctxs)}[{names}]")
+        cms = self.context_maps
+        if cms:
+            names = ", ".join(getattr(c, "name", "") for c in cms[:3] if getattr(c, "name", None))
+            tokens.append(f"context_maps={len(cms)}[{names}]")
+        doms = self.domains
+        if doms:
+            names = ", ".join(getattr(d, "name", "") for d in doms[:3] if getattr(d, "name", None))
+            tokens.append(f"domains={len(doms)}[{names}]")
+        subs = self.subdomains
+        if subs:
+            tokens.append(f"subdomains={len(subs)}")
         rels = self.relationships
         if rels:
             tokens.append(f"rels={len(rels)}")
