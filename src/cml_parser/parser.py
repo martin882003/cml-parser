@@ -2,7 +2,8 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from textx import metamodel_from_file
 from textx.exceptions import TextXSyntaxError
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
+import argparse
 import json
 import sys
 import os
@@ -51,8 +52,11 @@ class ParseResult:
             "filename": self.filename,
         }
 
-    def to_json(self) -> str:
-        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
+    def to_json(self, include_model: bool = False) -> str:
+        data = self.to_dict()
+        if include_model and self.model is not None:
+            data["model"] = model_to_data(self.model)
+        return json.dumps(data, ensure_ascii=False, indent=2)
 
     def summary(self) -> str:
         if self.ok:
@@ -123,22 +127,111 @@ def _parse_internal(path: Optional[str], text: Optional[str], strict: bool) -> P
         return result
 
 
+def model_to_data(obj: Any, visited=None) -> Union[dict, list, str, int, float, bool, None]:
+    """
+    Best-effort conversion of a textX model to plain data structures for JSON export.
+    """
+    if visited is None:
+        visited = set()
+    if id(obj) in visited:
+        return "<recursion>"
+    visited.add(id(obj))
+
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    if isinstance(obj, list):
+        return [model_to_data(item, visited) for item in obj]
+    if isinstance(obj, dict):
+        return {k: model_to_data(v, visited) for k, v in obj.items()}
+    # textX model objects behave like plain objects; walk their __dict__
+    if hasattr(obj, "__dict__"):
+        data = {}
+        for k, v in vars(obj).items():
+            if k.startswith("_"):
+                continue
+            data[k] = model_to_data(v, visited)
+        data["__type__"] = obj.__class__.__name__
+        return data
+    return str(obj)
+
+
+def render_tree(obj: Any, max_depth: Optional[int] = None) -> str:
+    """
+    Render a simple tree view of the model for quick inspection.
+    """
+    lines: List[str] = []
+    visited = set()
+
+    def label(x):
+        name = getattr(x, "name", None)
+        typ = x.__class__.__name__
+        return f"{typ}({name})" if name is not None else typ
+
+    def walk(node, depth):
+        if max_depth is not None and depth > max_depth:
+            return
+        prefix = "  " * depth
+        if isinstance(node, (str, int, float, bool)) or node is None:
+            lines.append(f"{prefix}{repr(node)}")
+            return
+        if isinstance(node, list):
+            lines.append(f"{prefix}list[{len(node)}]")
+            for item in node:
+                walk(item, depth + 1)
+            return
+        if id(node) in visited:
+            lines.append(f"{prefix}<recursion {label(node)}>")
+            return
+        visited.add(id(node))
+        if hasattr(node, "__dict__"):
+            lines.append(f"{prefix}{label(node)}")
+            for k, v in vars(node).items():
+                if k.startswith("_"):
+                    continue
+                lines.append(f"{prefix}  {k}:")
+                walk(v, depth + 2)
+        else:
+            lines.append(f"{prefix}{label(node)}")
+
+    walk(obj, 0)
+    return "\n".join(lines)
+
+
 def main(argv=None) -> int:
     """
     Minimal CLI entrypoint to parse a single .cml file.
     """
     args = sys.argv[1:] if argv is None else argv
-    if args:
-        result = parse_file_safe(args[0])
-        if result.ok:
-            print(f"Successfully parsed {args[0]}")
-            return 0
-        print(f"Error parsing {args[0]}:", file=sys.stderr)
+    parser = argparse.ArgumentParser(prog="cml-parse", add_help=True)
+    parser.add_argument("file", nargs="?", help="Path to .cml file")
+    parser.add_argument("--json", action="store_true", help="Emit parse result as JSON (model converted best-effort)")
+    parser.add_argument("--tree", action="store_true", help="Print a tree view of the model")
+    parser.add_argument("--summary", action="store_true", help="Print a short success summary")
+    parsed = parser.parse_args(args)
+
+    if not parsed.file:
+        parser.print_usage(file=sys.stderr)
+        return 1
+
+    result = parse_file_safe(parsed.file)
+    if not result.ok:
+        print(f"Error parsing {parsed.file}:", file=sys.stderr)
         for err in result.errors:
             print(err.pretty(), file=sys.stderr)
         return 1
-    print("Usage: python parser.py <file.cml>", file=sys.stderr)
-    return 1
+
+    if parsed.json:
+        print(result.to_json(include_model=True))
+        return 0
+    if parsed.tree:
+        print(render_tree(result.model))
+        return 0
+    if parsed.summary:
+        print(result.summary())
+        return 0
+
+    print(f"Successfully parsed {parsed.file}")
+    return 0
 
 
 if __name__ == "__main__":

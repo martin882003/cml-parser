@@ -32,7 +32,7 @@ def test_main_without_args(capsys):
     exit_code = parser_mod.main([])
     captured = capsys.readouterr().err
     assert exit_code == 1
-    assert "Usage: python parser.py <file.cml>" in captured
+    assert "usage:" in captured.lower()
 
 
 def test_main_with_file(capsys):
