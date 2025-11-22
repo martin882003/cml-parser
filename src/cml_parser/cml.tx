@@ -123,7 +123,11 @@ Aggregate:
 ;
 
 DomainObject:
-    (doc=STRING)? (SimpleDomainObject | Enum)
+    (doc=STRING)? domainObject=SimpleDomainObjectOrEnum
+;
+
+SimpleDomainObjectOrEnum:
+    SimpleDomainObject | Enum
 ;
 
 SimpleDomainObject:
