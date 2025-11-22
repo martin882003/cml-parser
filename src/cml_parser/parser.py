@@ -113,6 +113,18 @@ def _build_cml_object(parse_result: ParseResult) -> CML:
                     name=getattr(el, "name", ""),
                     vision=getattr(el, "vision", "")
                 )
+                
+                # Check body for vision override
+                if hasattr(el, "body") and el.body:
+                    for entry in getattr(el.body, "entries", []) or []:
+                        entry_type = entry.__class__.__name__
+                        if entry_type == "SubdomainAttribute":
+                            if hasattr(entry, "domainVisionStatement") and entry.domainVisionStatement:
+                                domain.vision = entry.domainVisionStatement
+                        elif entry_type == "BoundedContextAttribute":
+                            if hasattr(entry, "domainVisionStatement") and entry.domainVisionStatement:
+                                domain.vision = entry.domainVisionStatement
+
                 cml.domains.append(domain)
                 domain_map[domain.name] = domain
                 
@@ -128,6 +140,22 @@ def _build_cml_object(parse_result: ParseResult) -> CML:
                     vision=getattr(el, "vision", "")
                 )
                 
+                # Check body for attributes
+                if hasattr(el, "body") and el.body:
+                    for entry in getattr(el.body, "entries", []) or []:
+                        entry_type = entry.__class__.__name__
+                        if entry_type == "BoundedContextAttribute":
+                            if hasattr(entry, "type") and entry.type:
+                                context.type = str(entry.type)
+                            if hasattr(entry, "domainVisionStatement") and entry.domainVisionStatement:
+                                context.vision = entry.domainVisionStatement
+                            if hasattr(entry, "responsibilities") and entry.responsibilities:
+                                context.responsibilities = entry.responsibilities
+                            if hasattr(entry, "implementationTechnology") and entry.implementationTechnology:
+                                context.implementation_technology = entry.implementationTechnology
+                            if hasattr(entry, "knowledgeLevel") and entry.knowledgeLevel:
+                                context.knowledge_level = str(entry.knowledgeLevel)
+
                 # Process aggregates and services
                 _process_context_children(el, context)
                 
@@ -139,10 +167,33 @@ def _build_cml_object(parse_result: ParseResult) -> CML:
                     type=getattr(el, "type", "SYSTEM_LANDSCAPE"), # Default?
                     state=getattr(el, "state", "AS_IS") # Default?
                 )
+                
+                # Extract type and state from settings
+                settings = getattr(el, "contextMapSettings", []) or []
+                for setting in settings:
+                    if hasattr(setting, "type") and setting.type:
+                        cm.type = str(setting.type)
+                    if hasattr(setting, "state") and setting.state:
+                        cm.state = str(setting.state)
+
                 cml.context_maps.append(cm)
 
             elif el_type == "UseCase":
                 uc = UseCase(name=getattr(el, "name", ""))
+                
+                # Extract attributes
+                elements = getattr(el, "elements", []) or []
+                for element in elements:
+                    el_type_uc = element.__class__.__name__
+                    if el_type_uc == "UseCaseActor":
+                        uc.actor = getattr(element, "actor", "")
+                    elif el_type_uc == "UseCaseBenefit":
+                        uc.benefit = getattr(element, "benefit", "")
+                    elif el_type_uc == "UseCaseScope":
+                        uc.scope = getattr(element, "scope", "")
+                    elif el_type_uc == "UseCaseLevel":
+                        uc.level = getattr(element, "level", "")
+
                 cml.use_cases.append(uc)
 
     # Second pass: Link everything
@@ -247,8 +298,15 @@ def _process_subdomains(domain_node, domain_obj, subdomain_map):
                                 elif entry_type == "BoundedContextAttribute":
                                     if hasattr(entry, "domainVisionStatement") and entry.domainVisionStatement:
                                         sd.vision = entry.domainVisionStatement
+                                elif entry_type == "DomainObject":
+                                    # DomainObject wraps Entity, ValueObject, etc.
+                                    inner = getattr(entry, "domainObject", None)
+                                    if inner and inner.__class__.__name__ == "Entity":
+                                        sd.entities.append(Entity(name=getattr(inner, "name", "")))
+                                elif entry_type == "Entity":
+                                    sd.entities.append(Entity(name=getattr(entry, "name", "")))
 
-                        # Entities
+                        # Entities (legacy check, just in case)
                         if hasattr(item, "entities"):
                             for ent in item.entities:
                                 sd.entities.append(Entity(name=getattr(ent, "name", "")))

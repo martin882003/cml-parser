@@ -144,11 +144,14 @@ class Service:
 @dataclass
 class Context:
     name: str
-    type: str
-    state: str # TODO: Enum?
-    vision: str
+    type: str = "FEATURE"
+    state: str = "UNDEFINED"
+    vision: str = ""
+    responsibilities: str = ""
+    implementation_technology: str = ""
+    knowledge_level: str = ""
     implements: List[Subdomain] = field(default_factory=list)
-    context_map: 'ContextMap' = field(default=None, repr=False)
+    context_map: Optional['ContextMap'] = field(default=None, repr=False)
     aggregates: List[Aggregate] = field(default_factory=list)
     services: List[Service] = field(default_factory=list)
 
@@ -168,9 +171,9 @@ class Context:
 class Relationship:
     left: Context
     right: Context
-    type: str # This is the derived type (e.g., "Upstream-Downstream", "ACL", etc.)
+    type: str = "Unknown"
     roles: List[str] = field(default_factory=list)
-    raw_model: Any = field(default=None, repr=False) # The underlying textX object for detailed inspection if needed
+    raw_model: Optional[Any] = field(default=None, repr=False) # The underlying textX object for detailed inspection if needed
 
     def __repr__(self):
         return f"<Relationship({self.left.name} -> {self.right.name} [{self.type}])>"
@@ -237,41 +240,28 @@ from pathlib import Path
 
 @dataclass
 class CML:
-    parse_results: ParseResult
     domains: List[Domain] = field(default_factory=list)
     context_maps: List[ContextMap] = field(default_factory=list)
     use_cases: List[UseCase] = field(default_factory=list)
+    parse_results: Optional['ParseResult'] = field(default=None, repr=False)
 
     def get_domain(self, domain_name: str) -> Optional[Domain]:
         return next((d for d in self.domains if d.name == domain_name), None)
 
-    def get_context_map(self, context_map_name: str) -> Optional[ContextMap]:
-        return next((cm for cm in self.context_maps if cm.name == context_map_name), None)
+    def get_context_map(self, map_name: str) -> Optional[ContextMap]:
+        return next((cm for cm in self.context_maps if cm.name == map_name), None)
 
     def get_use_case(self, use_case_name: str) -> Optional[UseCase]:
         return next((uc for uc in self.use_cases if uc.name == use_case_name), None)
 
     def __repr__(self):
-        tokens = []
-        if self.parse_results.filename:
-            tokens.append(f"file={Path(self.parse_results.filename).name}")
+        filename = self.parse_results.filename if self.parse_results else "unknown"
         
-        if self.context_maps:
-            names = ", ".join(c.name for c in self.context_maps[:3])
-            if len(self.context_maps) > 3:
-                names += ", ..."
-            tokens.append(f"context_maps={len(self.context_maps)}[{names}]")
-            
-        if self.domains:
-            names = ", ".join(d.name for d in self.domains[:3])
-            if len(self.domains) > 3:
-                names += ", ..."
-            tokens.append(f"domains={len(self.domains)}[{names}]")
-            
-        if self.use_cases:
-            names = ", ".join(u.name for u in self.use_cases[:3])
-            if len(self.use_cases) > 3:
-                names += ", ..."
-            tokens.append(f"use_cases={len(self.use_cases)}[{names}]")
-
-        return f"<CML {' '.join(tokens)}>"
+        cm_names = ", ".join(cm.name for cm in self.context_maps)
+        d_names = ", ".join(d.name for d in self.domains)
+        uc_names = ", ".join(uc.name for uc in self.use_cases)
+        
+        return (f"<CML file={filename} "
+                f"context_maps=[{cm_names}] "
+                f"domains=[{d_names}] "
+                f"use_cases=[{uc_names}]>")
