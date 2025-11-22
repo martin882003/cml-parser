@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict
+from enum import Enum
 from pathlib import Path
 from textx import metamodel_from_file
 from textx.exceptions import TextXSyntaxError
@@ -130,8 +131,8 @@ class ParseResult:
             None,
         )
 
-    def get_relationships_by_type(self, rel_type: str):
-        rel_type_upper = rel_type.upper()
+    def get_relationships_by_type(self, rel_type: Union[str, "RelationshipType"]):
+        rel_type_upper = str(rel_type).upper()
         results = []
         for r in self.relationships:
             keyword = getattr(getattr(r, "connection", None), "keyword", None)
@@ -165,6 +166,24 @@ class CmlSyntaxError(Exception):
     def __init__(self, diagnostic: Diagnostic):
         super().__init__(diagnostic.pretty())
         self.diagnostic = diagnostic
+
+
+class RelationshipType(str, Enum):
+    CUSTOMER_SUPPLIER = "Customer-Supplier"
+    UPSTREAM_DOWNSTREAM = "Upstream-Downstream"
+    DOWNSTREAM_UPSTREAM = "Downstream-Upstream"
+    PARTNERSHIP = "Partnership"
+    SHARED_KERNEL = "Shared-Kernel"
+    ACL = "ACL"
+    CF = "CF"
+    OHS = "OHS"
+    PL = "PL"
+    SK = "SK"
+    U = "U"
+    D = "D"
+    S = "S"
+    C = "C"
+    P = "P"
 
 
 def get_metamodel():

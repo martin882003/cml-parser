@@ -6,6 +6,7 @@ from .parser import (
     ParseResult,
     Diagnostic,
     CmlSyntaxError,
+    RelationshipType,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ParseResult",
     "Diagnostic",
     "CmlSyntaxError",
+    "RelationshipType",
 ]
