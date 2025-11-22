@@ -221,15 +221,6 @@ class ParseResult:
         if doms:
             names = ", ".join(getattr(d, "name", "") for d in doms[:3] if getattr(d, "name", None))
             tokens.append(f"domains={len(doms)}[{names}]")
-        subs = self.subdomains
-        if subs:
-            tokens.append(f"subdomains={len(subs)}")
-        rels = self.relationships
-        if rels:
-            tokens.append(f"rels={len(rels)}")
-        uses = self.use_cases
-        if uses:
-            tokens.append(f"use_cases={len(uses)}")
         if not tokens:
             tokens.append(f"model={_label(self.model)}")
         return "<ParseResult " + " ".join(tokens) + ">"
