@@ -8,7 +8,7 @@
 
 A Python library to parse the Context Mapper Language (CML) using ANTLR4. It aims to cover the language defined by the Context Mapper project and is validated against the official sample models.
 
-**Docs:** https://martin882003.github.io/cml_parser
+**Docs:** https://martin882003.github.io/cml-parser
 
 ## Context
 
