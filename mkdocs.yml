@@ -1,8 +1,8 @@
 site_name: CML Parser
 site_description: Context Mapper Language parser for Python with ANTLR4
 site_url: https://martin882003.github.io/cml-parser
-repo_url: https://github.com/martin882003/cml_parser
-repo_name: martin882003/cml_parser
+repo_url: https://github.com/martin882003/cml-parser
+repo_name: martin882003/cml-parser
 theme:
   name: material
   language: en

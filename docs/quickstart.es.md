@@ -19,8 +19,8 @@ uv pip install cml-parser
 Desde el código fuente:
 
 ```bash
-git clone https://github.com/martin882003/cml_parser.git
-cd cml_parser
+git clone https://github.com/martin882003/cml-parser.git
+cd cml-parser
 uv sync  # o: python -m venv .venv && source .venv/bin/activate && pip install -e .
 ```
 

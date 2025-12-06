@@ -1,8 +1,8 @@
 # CML Parser
 
-[![CI](https://github.com/martin882003/cml_parser/actions/workflows/ci.yml/badge.svg)](https://github.com/martin882003/cml_parser/actions/workflows/ci.yml)
+[![CI](https://github.com/martin882003/cml-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/martin882003/cml-parser/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/cml-parser.svg)](https://pypi.org/project/cml-parser/)
-[![codecov](https://codecov.io/github/martin882003/cml_parser/graph/badge.svg?token=LBFYNPZQE0)](https://codecov.io/github/martin882003/cml_parser)
+[![codecov](https://codecov.io/github/martin882003/cml-parser/graph/badge.svg?token=LBFYNPZQE0)](https://codecov.io/github/martin882003/cml-parser)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -27,8 +27,8 @@ CML is the DSL for Context Mapper, a toolkit for strategic/tactical Domain-Drive
 uv pip install cml-parser
 
 # Or clone and install from source
-git clone https://github.com/martin882003/cml_parser.git
-cd cml_parser
+git clone https://github.com/martin882003/cml-parser.git
+cd cml-parser
 uv sync
 ```
 
@@ -41,8 +41,8 @@ pip install cml-parser
 ### From Source (pip)
 
 ```bash
-git clone https://github.com/martin882003/cml_parser.git
-cd cml_parser
+git clone https://github.com/martin882003/cml-parser.git
+cd cml-parser
 pip install -e .
 ```
 
@@ -92,8 +92,8 @@ This parser is built with **ANTLR4**, providing:
 ### Setup with uv
 
 ```bash
-git clone https://github.com/martin882003/cml_parser.git
-cd cml_parser
+git clone https://github.com/martin882003/cml-parser.git
+cd cml-parser
 uv sync
 uv run pytest
 ```
@@ -101,8 +101,8 @@ uv run pytest
 ### Setup with pip
 
 ```bash
-git clone https://github.com/martin882003/cml_parser.git
-cd cml_parser
+git clone https://github.com/martin882003/cml-parser.git
+cd cml-parser
 python -m venv venv
 source venv/bin/activate
 pip install -e .
