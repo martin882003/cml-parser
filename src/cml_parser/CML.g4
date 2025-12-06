@@ -205,8 +205,8 @@ enumDecl
 // Tactical DDD Features - The core fix for attribute parsing
 feature
     : repository
-    | attribute
     | operation
+    | attribute
     // Fallback to swallow unrecognized statements inside DDD blocks
     | rawStatement
     ;

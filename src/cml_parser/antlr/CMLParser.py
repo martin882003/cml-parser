@@ -1,4 +1,4 @@
-# Generated from src/cml_parser/CML.g4 by ANTLR 4.13.2
+# Generated from CML.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -268,8 +268,8 @@ def serializedATN():
         3,190,95,0,573,575,5,3,0,0,574,576,5,70,0,0,575,574,1,0,0,0,575,
         576,1,0,0,0,576,577,1,0,0,0,577,579,3,226,113,0,578,580,5,71,0,0,
         579,578,1,0,0,0,579,580,1,0,0,0,580,581,1,0,0,0,581,582,5,4,0,0,
-        582,77,1,0,0,0,583,588,3,112,56,0,584,588,3,80,40,0,585,588,3,82,
-        41,0,586,588,3,224,112,0,587,583,1,0,0,0,587,584,1,0,0,0,587,585,
+        582,77,1,0,0,0,583,588,3,112,56,0,584,588,3,82,41,0,585,588,3,80,
+        40,0,586,588,3,224,112,0,587,583,1,0,0,0,587,584,1,0,0,0,587,585,
         1,0,0,0,587,586,1,0,0,0,588,79,1,0,0,0,589,591,3,118,59,0,590,589,
         1,0,0,0,590,591,1,0,0,0,591,593,1,0,0,0,592,594,5,72,0,0,593,592,
         1,0,0,0,593,594,1,0,0,0,594,595,1,0,0,0,595,596,3,106,53,0,596,598,
@@ -3811,12 +3811,12 @@ class CMLParser ( Parser ):
             return self.getTypedRuleContext(CMLParser.RepositoryContext,0)
 
 
-        def attribute(self):
-            return self.getTypedRuleContext(CMLParser.AttributeContext,0)
-
-
         def operation(self):
             return self.getTypedRuleContext(CMLParser.OperationContext,0)
+
+
+        def attribute(self):
+            return self.getTypedRuleContext(CMLParser.AttributeContext,0)
 
 
         def rawStatement(self):
@@ -3860,13 +3860,13 @@ class CMLParser ( Parser ):
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 584
-                self.attribute()
+                self.operation()
                 pass
 
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 585
-                self.operation()
+                self.attribute()
                 pass
 
             elif la_ == 4:
