@@ -2,7 +2,9 @@
 
 Snippets para copiar y pegar; podés correrlos con `python -m cml_parser.parser ...` o desde Python.
 
-## Context Map mínimo
+## DDD estratégico
+
+### Context Map mínimo
 
 **cml:** `minimal.cml`
 ```cml
@@ -31,7 +33,7 @@ for rel in cm.relationships:
 ACL Billing -> Shipping REST
 ```
 
-## Dominio + Subdominios
+### Dominio + Subdominios
 
 **cml:** `domain.cml`
 ```cml
@@ -59,7 +61,70 @@ print("Implementaciones Core:", [c.name for c in core.implementations])
 Implementaciones Core: ['Store']
 ```
 
-## Agregado táctico
+### Relaciones con atributos y agregados expuestos
+
+**cml:** `rels.cml`
+```cml
+ContextMap Landscape {
+  contains Billing, Policy
+
+  Billing [PL]-> Policy {
+    implementationTechnology = "REST/JSON"
+    downstreamRights = VETO_RIGHT
+    exposedAggregates = PolicyAgg
+  }
+}
+
+BoundedContext Billing {}
+BoundedContext Policy {
+  Aggregate PolicyAgg {}
+}
+```
+
+**parseo:**
+```python
+from cml_parser import parse_file_safe
+
+cml = parse_file_safe("rels.cml")
+cm = cml.get_context_map("Landscape")
+rel = cm.relationships[0]
+print(rel.type, rel.implementation_technology, rel.downstream_rights, rel.exposed_aggregates)
+```
+
+**salida:**
+```
+PL REST/JSON VETO_RIGHT ['PolicyAgg']
+```
+
+### Dominio con entidades dentro del subdominio
+
+**cml:** `subdomain_entities.cml`
+```cml
+Domain Marketplace {
+  Subdomain Core type CORE_DOMAIN {
+    Entity Product { String name }
+    Entity Customer { String email }
+  }
+}
+```
+
+**parseo:**
+```python
+from cml_parser import parse_file_safe
+
+cml = parse_file_safe("subdomain_entities.cml")
+sd = cml.get_domain("Marketplace").get_subdomain("Core")
+print("Entidades:", [e.name for e in sd.entities])
+```
+
+**salida:**
+```
+Entidades: ['Product', 'Customer']
+```
+
+## DDD táctico
+
+### Agregado táctico
 
 **cml:** `order.cml`
 ```cml
@@ -108,7 +173,9 @@ Valida cualquier archivo y obtené un resumen:
 python -m cml_parser.parser minimal.cml --summary
 ```
 
-## Flujo de aplicación con comandos/eventos
+## Capa de aplicación
+
+### Flujo con comandos/eventos
 
 **cml:** `appflow.cml`
 ```cml
@@ -147,65 +214,4 @@ print("Pasos:", [(s.type, s.name) for s in flow.steps])
 ```
 Comandos: ['RegisterCustomer']
 Pasos: [('command', 'RegisterCustomer'), ('event', 'CustomerRegistered')]
-```
-
-## Relaciones con atributos y agregados expuestos
-
-**cml:** `rels.cml`
-```cml
-ContextMap Landscape {
-  contains Billing, Policy
-
-  Billing [PL]-> Policy {
-    implementationTechnology = "REST/JSON"
-    downstreamRights = VETO_RIGHT
-    exposedAggregates = PolicyAgg
-  }
-}
-
-BoundedContext Billing {}
-BoundedContext Policy {
-  Aggregate PolicyAgg {}
-}
-```
-
-**parseo:**
-```python
-from cml_parser import parse_file_safe
-
-cml = parse_file_safe("rels.cml")
-cm = cml.get_context_map("Landscape")
-rel = cm.relationships[0]
-print(rel.type, rel.implementation_technology, rel.downstream_rights, rel.exposed_aggregates)
-```
-
-**salida:**
-```
-PL REST/JSON VETO_RIGHT ['PolicyAgg']
-```
-
-## Dominio con entidades dentro del subdominio
-
-**cml:** `subdomain_entities.cml`
-```cml
-Domain Marketplace {
-  Subdomain Core type CORE_DOMAIN {
-    Entity Product { String name }
-    Entity Customer { String email }
-  }
-}
-```
-
-**parseo:**
-```python
-from cml_parser import parse_file_safe
-
-cml = parse_file_safe("subdomain_entities.cml")
-sd = cml.get_domain("Marketplace").get_subdomain("Core")
-print("Entidades:", [e.name for e in sd.entities])
-```
-
-**salida:**
-```
-Entidades: ['Product', 'Customer']
 ```
