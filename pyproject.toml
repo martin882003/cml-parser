@@ -22,7 +22,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "textX",
+    "antlr4-python3-runtime>=4.13.0",
 ]
 requires-python = ">=3.10"
 
@@ -34,7 +34,12 @@ requires-python = ">=3.10"
 include-package-data = true
 
 [tool.setuptools.package-data]
-"cml_parser" = ["cml.tx"]
+"cml_parser" = ["CML.g4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = [
+    "antlr4-tools>=0.2.2",
+]
