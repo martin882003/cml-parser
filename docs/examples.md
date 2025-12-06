@@ -107,3 +107,105 @@ Validate any file and get a summary:
 ```bash
 python -m cml_parser.parser minimal.cml --summary
 ```
+
+## Application Flow with Commands/Events
+
+**cml:** `appflow.cml`
+```cml
+ContextMap AppFlowMap { contains Onboarding }
+
+BoundedContext Onboarding {
+  Aggregate CustomerAgg {
+    Entity Customer { aggregateRoot String name }
+    CommandEvent RegisterCustomer {}
+    DataTransferObject CustomerDTO { String name }
+  }
+
+  Application OnboardingApp {
+    command RegisterCustomer using CustomerDTO
+    flow Onboard {
+      command RegisterCustomer
+      event CustomerRegistered
+    }
+  }
+}
+```
+
+**parse:**
+```python
+from cml_parser import parse_file_safe
+
+cml = parse_file_safe("appflow.cml")
+ctx = cml.get_context("Onboarding")
+app = ctx.application
+print("Commands:", [c.name for c in app.commands])
+flow = app.flows[0]
+print("Flow steps:", [(s.type, s.name) for s in flow.steps])
+```
+
+**output:**
+```
+Commands: ['RegisterCustomer']
+Flow steps: [('command', 'RegisterCustomer'), ('event', 'CustomerRegistered')]
+```
+
+## Relationships with roles and exposed aggregates
+
+**cml:** `rels.cml`
+```cml
+ContextMap Landscape {
+  contains Billing, Policy
+
+  Billing [PL]-> Policy {
+    implementationTechnology = "REST/JSON"
+    downstreamRights = VETO_RIGHT
+    exposedAggregates = PolicyAgg
+  }
+}
+
+BoundedContext Billing {}
+BoundedContext Policy {
+  Aggregate PolicyAgg {}
+}
+```
+
+**parse:**
+```python
+from cml_parser import parse_file_safe, RelationshipType
+
+cml = parse_file_safe("rels.cml")
+cm = cml.get_context_map("Landscape")
+rel = cm.relationships[0]
+print(rel.type, rel.implementation_technology, rel.downstream_rights, rel.exposed_aggregates)
+```
+
+**output:**
+```
+PL REST/JSON VETO_RIGHT ['PolicyAgg']
+```
+
+## Domain with Entities inside Subdomain
+
+**cml:** `subdomain_entities.cml`
+```cml
+Domain Marketplace {
+  Subdomain Core type CORE_DOMAIN {
+    Entity Product { String name }
+    Entity Customer { String email }
+  }
+}
+```
+
+**parse:**
+```python
+from cml_parser import parse_file_safe
+
+cml = parse_file_safe("subdomain_entities.cml")
+sd = cml.get_domain("Marketplace").get_subdomain("Core")
+print("Entities:", [e.name for e in sd.entities])
+```
+
+**output:**
+```
+Entities: ['Product', 'Customer']
+```
