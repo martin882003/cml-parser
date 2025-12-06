@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Ensure package import works without installation
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+
 from cml_parser.parser import parse_file_safe
 
 def test_missing_attributes(tmp_path):

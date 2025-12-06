@@ -26,7 +26,7 @@ def test_parse_cml_safe(file_path):
     print(f"Testing {file_path}")
     cml = parse_file_safe(file_path)
     assert cml.parse_results.errors == []
-    assert cml.parse_results.model is not None
+    assert cml.parse_results.ok, f"Parse failed: {cml.parse_results.errors}"
 
 
 def test_main_without_args(capsys):
@@ -76,7 +76,7 @@ def test_parse_file_safe_success():
     tmp.write_text("ContextMap Demo {}\n", encoding="utf-8")
     cml = parse_file_safe(str(tmp))
     assert cml.parse_results.errors == []
-    assert cml.parse_results.model is not None
+    assert cml.parse_results.ok
     tmp.unlink(missing_ok=True)
 
 
@@ -197,6 +197,38 @@ def test_context_subdomain_links(tmp_path):
     assert len(ctx_x.implements) == 2
     assert ctx_x.get_subdomain("A")
     assert ctx_x.get_subdomain("B")
+
+
+def test_global_context_queries(tmp_path):
+    text = """
+    BoundedContext Lonely {}
+    BoundedContext WithAgg {
+        Aggregate Sales {
+            Entity Order {}
+        }
+    }
+    """
+    file_path = tmp_path / "queries.cml"
+    file_path.write_text(text, encoding="utf-8")
+    cml = parse_file_safe(str(file_path))
+    assert cml.parse_results.errors == []
+
+    # Context lookup should include contexts not in a map
+    lonely = cml.get_context("Lonely")
+    with_agg = cml.get_context("WithAgg")
+    assert lonely and with_agg
+    assert len(cml.contexts) == 2
+
+    # Aggregate and entity lookup through convenience helpers
+    agg = cml.get_aggregate("Sales")
+    assert agg and agg.name == "Sales"
+
+    ent = cml.get_entity("Order")
+    assert ent and ent.name == "Order"
+
+    # Filtered search should return the same entity
+    ent_filtered = cml.get_entity("Order", context_name="WithAgg", aggregate_name="Sales")
+    assert ent_filtered is ent
 
 
 def test_domain_subdomain_types(tmp_path):

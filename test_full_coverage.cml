@@ -1,0 +1,80 @@
+ContextMap FullCoverageMap {
+    type = SYSTEM_LANDSCAPE
+    state = TO_BE
+
+    contains CustomerManagement, PolicyManagement
+
+    CustomerManagement [D, C] <- [U, S] PolicyManagement : CustomerSupplierRel {
+        implementationTechnology = "REST/JSON"
+        downstreamRights = VETO_RIGHT
+        exposedAggregates = PolicyAgg
+    }
+}
+
+BoundedContext CustomerManagement {
+    domainVisionStatement = "Manages customer data"
+    type = FEATURE
+    
+    Application {
+        Command CreateCustomer
+        
+        Flow CustomerOnboarding {
+            command CreateCustomer delegates to CustomerAgg[-> Created]
+            event CustomerCreated triggers WelcomeEmail
+        }
+        
+        Coordination ComplexWorkflow {
+            Step1 :: Step2
+        }
+    }
+    
+    Aggregate CustomerAgg {
+        Entity Customer {
+            aggregateRoot
+            - String name
+            def void updateName(String newName)
+        }
+        
+        CommandEvent CreateCustomerCommand {
+            - String name
+        }
+        
+        DataTransferObject CustomerDTO {
+            - String name
+        }
+    }
+}
+
+BoundedContext PolicyManagement {
+    Module PolicyModule {
+        Aggregate PolicyAgg {
+            Entity Policy {
+                aggregateRoot
+            }
+        }
+    }
+}
+
+Stakeholders of Project {
+    StakeholderGroup Management {
+        Stakeholder CEO {
+            influence High
+            interest High
+        }
+    }
+    
+    Stakeholder Developer {
+        impact High
+    }
+}
+
+ValueRegister MyValues for CustomerManagement {
+    ValueCluster Efficiency {
+        core EfficiencyValue
+        demonstrator "KPI Dashboard"
+        
+        Value EfficiencyValue {
+            isCore
+        }
+    }
+}
