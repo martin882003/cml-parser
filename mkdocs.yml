@@ -51,18 +51,6 @@ plugins:
         - locale: es
           name: Español
           build: true
-      nav_translations:
-        es:
-          Learn CML: Aprende CML
-          Introduction: Introducción
-          Context Maps & relationships: Mapas de contexto y relaciones
-          Domains & Subdomains: Dominios y subdominios
-          Bounded Contexts: Bounded Contexts
-          Tactical DDD: DDD táctico
-          Events & DTOs: Eventos y DTOs
-          Application layer: Capa de aplicación
-          Use cases & extensions: Casos de uso y extensiones
-          File pattern & imports: Patrón de archivo e imports
 nav:
   - index.md
   - quickstart.md
@@ -70,7 +58,7 @@ nav:
   - examples.md
   - reference.md
   - Learn CML:
-      - Introduction: tutorial.md#overview
+      - Introduction: tutorial.md
       - Context Maps & relationships: tutorial.md#context-maps
       - Domains & Subdomains: tutorial.md#domains
       - Bounded Contexts: tutorial.md#bounded-contexts
