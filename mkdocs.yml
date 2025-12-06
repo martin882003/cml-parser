@@ -54,7 +54,7 @@ plugins:
 nav:
   - index.md
   - quickstart.md
-  - tutorial.md
   - usage.md
   - examples.md
   - reference.md
+  - Learn CML / Aprende CML: tutorial.md

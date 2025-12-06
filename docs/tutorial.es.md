@@ -1,115 +1,155 @@
-# Tutorial: CML y el parser
+# Aprende CML
 
-Una guía rápida para entender CML, cómo se escribe y cómo usar el parser para validarlo y recorrerlo.
+Guía exhaustiva de la sintaxis y conceptos de Context Mapper Language (CML). Solo lenguaje, sin herramientas.
 
-## ¿Qué es CML?
+## Pilares de CML
 
-Context Mapper Language (CML) es un DSL para modelar Domain-Driven Design:
-- **DDD estratégico:** Dominios, Subdominios, Bounded Contexts, Context Maps y relaciones (ACL, PL, Customer-Supplier, etc.).
-- **DDD táctico:** Agregados, Entidades, Value Objects, Services, Domain Events, Enums y capa de aplicación (commands, events, DTOs, flows).
+- **Context Maps**: mapean Bounded Contexts y sus relaciones.
+- **Dominios y Subdominios**: organizan el modelo estratégico.
+- **Bounded Contexts**: delimitan modelos tácticos e implementaciones.
+- **DDD táctico**: Agregados, Entidades, Value Objects, Services, Domain Events, Enums.
+- **Capa de aplicación**: Commands, Events, DTOs y Flows.
 
-## Estructura básica de un modelo
+## Context Maps y relaciones
 
 ```cml
-ContextMap Demo {
-  contains Billing, Shipping
-  Billing [ACL]-> Shipping {
-    implementationTechnology = "REST"
+ContextMap PaymentsLandscape {
+  type = SYSTEM_LANDSCAPE
+  state = AS_IS
+  contains Billing, Risk, Ledger
+
+  Billing [ACL]-> Risk {
+    implementationTechnology = "REST/JSON"
+    downstreamRights = VETO_RIGHT
+    exposedAggregates = FraudCheck
+  }
+
+  Risk [PL]-> Ledger {
+    implementationTechnology = "Kafka"
   }
 }
-
-Domain Commerce {
-  Subdomain Core type CORE_DOMAIN {}
-  Subdomain Catalogue type SUPPORTING_DOMAIN {}
-}
-
-BoundedContext Billing implements Core {}
-BoundedContext Shipping implements Catalogue {}
+BoundedContext Billing {}
+BoundedContext Risk {}
+BoundedContext Ledger {}
 ```
 
-- `ContextMap` define contextos y relaciones.
-- `BoundedContext` declara un contexto; puede implementar subdominios.
-- `Domain` y `Subdomain` organizan la visión estratégica.
+- `type`: SYSTEM_LANDSCAPE o TEAM_MAP.
+- `state`: AS_IS o TO_BE.
+- Relaciones: flechas (`[ACL]->`) o palabras clave (`Customer-Supplier`, `Partnership`, `Shared-Kernel`, etc.).
+- Atributos de relación: `implementationTechnology`, `downstreamRights`, `exposedAggregates`.
 
-## Extender con táctica
+## Dominios y Subdominios
 
 ```cml
-BoundedContext Billing {
-  Aggregate InvoiceAgg {
-    Entity Invoice {
+Domain Retail {
+  domainVisionStatement = "Great shopping experience"
+  Subdomain Core type CORE_DOMAIN { domainVisionStatement = "Checkout" }
+  Subdomain Support type SUPPORTING_DOMAIN {}
+  Subdomain Catalog type GENERIC_SUBDOMAIN {}
+}
+```
+
+- Tipos de subdominio: CORE_DOMAIN, SUPPORTING_DOMAIN, GENERIC_SUBDOMAIN.
+- Visión opcional en dominio/subdominio.
+
+## Bounded Contexts e implementaciones
+
+```cml
+BoundedContext Checkout implements Core {
+  type = SYSTEM
+  responsibilities = "Process orders"
+  implementationTechnology = "Python"
+  knowledgeLevel = CONCRETE
+}
+
+BoundedContext ProductCatalog implements Catalog {}
+```
+
+- `implements` vincula subdominios a contextos.
+- Atributos comunes: `type`, `responsibilities`, `implementationTechnology`, `knowledgeLevel`.
+
+## DDD táctico: Agregados y objetos
+
+```cml
+BoundedContext Checkout {
+  Aggregate OrderAgg {
+    owner OrdersTeam
+
+    Entity Order {
       aggregateRoot
-      - InvoiceId id
+      - OrderId id
       Money total
+      OrderStatus status
     }
-    ValueObject InvoiceId { String value key }
+
+    ValueObject OrderId { String value key }
     ValueObject Money { int amount String currency }
-    Service InvoiceService {
-      void createInvoice(InvoiceId id, Money total);
+
+    enum OrderStatus { CREATED, PAID, SHIPPED }
+
+    Service OrderService {
+      void createOrder(OrderId id, Money total);
+      void markPaid(OrderId id);
     }
   }
 }
 ```
 
-- `Aggregate` agrupa entidades/VOs.
-- Prefijo `-` marca referencia; `aggregateRoot` indica raíz.
-- `Service` define operaciones.
+- `aggregateRoot` marca la entidad raíz.
+- Prefijo `-` indica referencia.
+- `ValueObject` y `enum` modelan tipos de apoyo.
+- `Service` agrupa operaciones.
 
-## Capa de aplicación
+## Eventos y DTOs
 
 ```cml
-BoundedContext Billing {
-  Application BillingApp {
-    command RegisterInvoice using InvoiceDTO
-    flow BillingFlow {
-      command RegisterInvoice
-      event InvoiceRegistered
-    }
-  }
-  Aggregate InvoiceAgg {
-    CommandEvent RegisterInvoice {}
-    DataTransferObject InvoiceDTO { String id int amount }
+BoundedContext Checkout {
+  Aggregate OrderAgg {
+    CommandEvent RegisterOrder {}
+    DataTransferObject OrderDTO { String id Money total }
   }
 }
 ```
 
-## Usar el parser (Python)
+`CommandEvent` y `DataTransferObject` modelan contratos de mensajes.
 
-Instalá el paquete (`pip install cml-parser`) y parseá en modo seguro:
+## Capa de aplicación (flows y commands)
 
-```python
-from cml_parser import parse_file_safe
-
-cml = parse_file_safe("demo.cml")
-if not cml.parse_results.ok:
-    for err in cml.parse_results.errors:
-        print(err.pretty())
-else:
-    cm = cml.get_context_map("Demo")
-    for rel in cm.relationships:
-        print(rel.type, rel.left.name, "->", rel.right.name)
+```cml
+BoundedContext Checkout {
+  Application CheckoutApp {
+    command RegisterOrder using OrderDTO
+    flow Fulfillment {
+      command RegisterOrder
+      event OrderRegistered
+    }
+  }
+}
 ```
 
-Recorrer objetos:
+- `Application` declara comandos y flujos.
+- `flow` lista pasos tipo `command` o `event`.
 
-```python
-ctx = cml.get_context("Billing")
-agg = ctx.get_aggregate("InvoiceAgg")
-invoice = agg.get_entity("Invoice")
-print([ (a.name, a.type, a.is_reference) for a in invoice.attributes ])
+## Use Cases y otros elementos
+
+```cml
+UseCase PayInvoice {
+  actor "Customer"
+  benefit "Pay online"
+  scope "Checkout"
+  level "Summary"
+}
 ```
 
-## Validar desde CLI
+Para documentar actores, beneficios y alcance.
 
-```bash
-python -m cml_parser.parser demo.cml --summary
-# o salida JSON
-python -m cml_parser.parser demo.cml --json
-```
+## Patrón de archivo
 
-## Archivos de ejemplo
+Un mismo `.cml` puede mezclar ContextMaps, Domains, BoundedContexts y elementos tácticos. El orden no es crítico; las referencias se enlazan por nombre:
 
-Usá los modelos en `examples/` del repo o los snippets de [Ejemplos](examples.md) para probar el parser. Incluyen:
-- Context Maps y relaciones
-- Dominios/Subdominios e implementaciones
-- Agregados con entidades/VOs/servicios
-- Flujos de aplicación con commands/events/DTOs
+- Declara ContextMaps con sus contextos en `contains` o en relaciones.
+- Declara Domains/Subdomains para la visión.
+- Declara BoundedContexts y sus agregados/táctica.
+- Añade Application, UseCase, eventos y DTOs cuando corresponda.
+
+Con estas piezas podés modelar sistemas completos en CML. Usa los ejemplos como plantilla y adapta los atributos según tu escenario.
