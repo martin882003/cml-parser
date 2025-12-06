@@ -51,10 +51,22 @@ plugins:
         - locale: es
           name: Español
           build: true
+          nav_translations:
+            Learn CML: Aprende CML
+            Introduction: Introducción
+            Strategic DDD: DDD Estratégico
+            Requirements: Requerimientos
+            Tactical DDD: DDD Táctico
+            Application Layer: Capa de aplicación
 nav:
   - index.md
   - quickstart.md
   - usage.md
   - examples.md
   - reference.md
-  - Learn CML: tutorial.md
+  - Learn CML:
+    - Introduction: tutorial/index.md
+    - Requirements: tutorial/requirements.md
+    - Strategic DDD: tutorial/strategic.md
+    - Tactical DDD: tutorial/tactical.md
+    - Application Layer: tutorial/application.md
