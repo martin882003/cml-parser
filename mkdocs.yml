@@ -51,10 +51,13 @@ plugins:
         - locale: es
           name: Español
           build: true
+      nav_translations:
+        es:
+          Learn CML: Aprende CML
 nav:
   - index.md
   - quickstart.md
   - usage.md
   - examples.md
   - reference.md
-  - Learn CML / Aprende CML: tutorial.md
+  - Learn CML: tutorial.md
