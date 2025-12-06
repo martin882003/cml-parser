@@ -57,13 +57,4 @@ nav:
   - usage.md
   - examples.md
   - reference.md
-  - Learn CML:
-      - Introduction: tutorial.md
-      - Context Maps & relationships: tutorial.md#context-maps
-      - Domains & Subdomains: tutorial.md#domains
-      - Bounded Contexts: tutorial.md#bounded-contexts
-      - Tactical DDD: tutorial.md#tactical
-      - Events & DTOs: tutorial.md#events
-      - Application layer: tutorial.md#application
-      - Use cases & extensions: tutorial.md#extensions
-      - File pattern & imports: tutorial.md#file-pattern
+  - Learn CML: tutorial.md
