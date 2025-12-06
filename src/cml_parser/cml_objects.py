@@ -78,12 +78,119 @@ class ParseResult:
             parts.append(f"warnings={len(self.warnings)}")
         return f"<ParseResult {' '.join(parts)}>"
 
+# Tactical DDD Objects - Attributes and Operations
+
+@dataclass
+class Parameter:
+    """Represents a parameter in an operation/method."""
+    name: str
+    type: str
+    is_reference: bool = False  # True if prefixed with @
+
+    def __repr__(self):
+        ref_prefix = "@" if self.is_reference else ""
+        return f"{ref_prefix}{self.type} {self.name}"
+
+@dataclass
+class Operation:
+    """Represents an operation/method in a domain object or service."""
+    name: str
+    return_type: Optional[str] = None
+    parameters: List[Parameter] = field(default_factory=list)
+    visibility: Optional[str] = None  # public, private, protected
+    throws: List[str] = field(default_factory=list)
+    is_abstract: bool = False
+
+    def __repr__(self):
+        params_str = ", ".join(str(p) for p in self.parameters)
+        return_str = f" -> {self.return_type}" if self.return_type else ""
+        return f"<Operation({self.name}({params_str}){return_str})>"
+
+@dataclass
+class Attribute:
+    """Represents an attribute in a domain object (Entity, ValueObject, etc.)."""
+    name: str
+    type: str
+    is_reference: bool = False  # True if prefixed with -
+    visibility: Optional[str] = None  # public, private, protected
+    is_key: bool = False
+    collection_type: Optional[str] = None  # List, Set, Bag, Collection
+
+    def __repr__(self):
+        ref_prefix = "-" if self.is_reference else ""
+        key_suffix = " key" if self.is_key else ""
+        return f"{ref_prefix}{self.type} {self.name}{key_suffix}"
+
+# Domain Objects
+
 @dataclass
 class Entity:
     name: str
+    is_aggregate_root: bool = False
+    attributes: List[Attribute] = field(default_factory=list)
+    operations: List[Operation] = field(default_factory=list)
+    extends: Optional[str] = None
+    is_abstract: bool = False
+    aggregate: Optional['Aggregate'] = field(default=None, repr=False)
+
+    def get_attribute(self, attr_name: str) -> Optional[Attribute]:
+        return next((a for a in self.attributes if a.name == attr_name), None)
+    
+    def get_operation(self, op_name: str) -> Optional[Operation]:
+        return next((o for o in self.operations if o.name == op_name), None)
 
     def __repr__(self):
-        return f"<Entity({self.name})>"
+        root_suffix = " (root)" if self.is_aggregate_root else ""
+        return f"<Entity({self.name}{root_suffix})>"
+
+@dataclass
+class ValueObject:
+    """Represents a DDD Value Object."""
+    name: str
+    attributes: List[Attribute] = field(default_factory=list)
+    operations: List[Operation] = field(default_factory=list)
+    extends: Optional[str] = None
+    is_abstract: bool = False
+
+    def get_attribute(self, attr_name: str) -> Optional[Attribute]:
+        return next((a for a in self.attributes if a.name == attr_name), None)
+    
+    def get_operation(self, op_name: str) -> Optional[Operation]:
+        return next((o for o in self.operations if o.name == op_name), None)
+
+    def __repr__(self):
+        return f"<ValueObject({self.name})>"
+
+@dataclass
+class DomainEvent:
+    """Represents a DDD Domain Event."""
+    name: str
+    attributes: List[Attribute] = field(default_factory=list)
+    operations: List[Operation] = field(default_factory=list)
+    extends: Optional[str] = None
+    is_aggregate_root: bool = False
+    persistent: bool = False
+    is_abstract: bool = False
+
+    def get_attribute(self, attr_name: str) -> Optional[Attribute]:
+        return next((a for a in self.attributes if a.name == attr_name), None)
+    
+    def get_operation(self, op_name: str) -> Optional[Operation]:
+        return next((o for o in self.operations if o.name == op_name), None)
+
+    def __repr__(self):
+        return f"<DomainEvent({self.name})>"
+
+@dataclass
+class Enum:
+    """Represents an enumeration."""
+    name: str
+    values: List[str] = field(default_factory=list)
+    is_aggregate_lifecycle: bool = False
+
+    def __repr__(self):
+        lifecycle_suffix = " (lifecycle)" if self.is_aggregate_lifecycle else ""
+        return f"<Enum({self.name}{lifecycle_suffix})>"
 
 @dataclass
 class Subdomain:
@@ -130,6 +237,36 @@ class Domain:
 @dataclass
 class Aggregate:
     name: str
+    owner: Optional[str] = None
+    responsibilities: str = ""
+    knowledge_level: str = ""
+    entities: List[Entity] = field(default_factory=list)
+    value_objects: List[ValueObject] = field(default_factory=list)
+    domain_events: List[DomainEvent] = field(default_factory=list)
+    services: List['Service'] = field(default_factory=list)
+    repositories: List['Repository'] = field(default_factory=list)
+    enums: List[Enum] = field(default_factory=list)
+    command_events: List['CommandEvent'] = field(default_factory=list)
+    data_transfer_objects: List['DataTransferObject'] = field(default_factory=list)
+    context: Optional['Context'] = field(default=None, repr=False)
+
+    def get_entity(self, entity_name: str) -> Optional[Entity]:
+        return next((e for e in self.entities if e.name == entity_name), None)
+    
+    def get_value_object(self, vo_name: str) -> Optional[ValueObject]:
+        return next((vo for vo in self.value_objects if vo.name == vo_name), None)
+    
+    def get_domain_event(self, event_name: str) -> Optional[DomainEvent]:
+        return next((e for e in self.domain_events if e.name == event_name), None)
+    
+    def get_service(self, service_name: str) -> Optional['Service']:
+        return next((s for s in self.services if s.name == service_name), None)
+    
+    def get_repository(self, repo_name: str) -> Optional['Repository']:
+        return next((r for r in self.repositories if r.name == repo_name), None)
+    
+    def get_enum(self, enum_name: str) -> Optional[Enum]:
+        return next((e for e in self.enums if e.name == enum_name), None)
 
     def __repr__(self):
         return f"<Aggregate({self.name})>"
@@ -137,9 +274,27 @@ class Aggregate:
 @dataclass
 class Service:
     name: str
+    operations: List[Operation] = field(default_factory=list)
+    aggregate: Optional[Aggregate] = field(default=None, repr=False)
+
+    def get_operation(self, op_name: str) -> Optional[Operation]:
+        return next((o for o in self.operations if o.name == op_name), None)
 
     def __repr__(self):
         return f"<Service({self.name})>"
+
+@dataclass
+class Repository:
+    """Represents a DDD Repository for data access."""
+    name: str
+    operations: List[Operation] = field(default_factory=list)
+    entity: Optional[Entity] = field(default=None, repr=False)
+
+    def get_operation(self, op_name: str) -> Optional[Operation]:
+        return next((o for o in self.operations if o.name == op_name), None)
+
+    def __repr__(self):
+        return f"<Repository({self.name})>"
 
 @dataclass
 class Context:
@@ -154,6 +309,8 @@ class Context:
     context_map: Optional['ContextMap'] = field(default=None, repr=False)
     aggregates: List[Aggregate] = field(default_factory=list)
     services: List[Service] = field(default_factory=list)
+    modules: List['Module'] = field(default_factory=list)
+    application: Optional['Application'] = field(default=None, repr=False)
 
     def get_subdomain(self, subdomain_name: str) -> Optional[Subdomain]:
         return next((s for s in self.implements if s.name == subdomain_name), None)
@@ -173,6 +330,9 @@ class Relationship:
     right: Context
     type: str = "Unknown"
     roles: List[str] = field(default_factory=list)
+    implementation_technology: Optional[str] = None
+    downstream_rights: Optional[str] = None
+    exposed_aggregates: List[str] = field(default_factory=list)
     raw_model: Optional[Any] = field(default=None, repr=False) # The underlying textX object for detailed inspection if needed
 
     def __repr__(self):
@@ -231,10 +391,156 @@ class ContextMap:
 @dataclass
 class UseCase:
     name: str
-    # Add other fields
+    actor: Optional[str] = None
+    interactions: List[str] = field(default_factory=list)
+    benefit: Optional[str] = None
+    scope: Optional[str] = None
+    level: Optional[str] = None
 
     def __repr__(self):
         return f"<UseCase({self.name})>"
+
+@dataclass
+class UserStory:
+    name: str
+    role: Optional[str] = None
+    feature: Optional[str] = None
+    benefit: Optional[str] = None
+
+    def __repr__(self):
+        return f"<UserStory({self.name})>"
+
+@dataclass
+class Stakeholder:
+    name: str
+    influence: Optional[str] = None
+    interest: Optional[str] = None
+    priority: Optional[str] = None
+    impact: Optional[str] = None
+    consequences: List[str] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"<Stakeholder({self.name})>"
+
+@dataclass
+class StakeholderGroup:
+    name: str
+    stakeholders: List[Stakeholder] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"<StakeholderGroup({self.name})>"
+
+@dataclass
+class Value:
+    name: str
+    is_core: bool = False
+    demonstrator: Optional[str] = None
+    stakeholders: List[Stakeholder] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"<Value({self.name})>"
+
+@dataclass
+class ValueCluster:
+    name: str
+    core_value: Optional[str] = None
+    demonstrator: Optional[str] = None
+    values: List[Value] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"<ValueCluster({self.name})>"
+
+@dataclass
+class ValueRegister:
+    name: str
+    context: Optional[str] = None # The context this register is for
+    clusters: List[ValueCluster] = field(default_factory=list)
+    values: List[Value] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"<ValueRegister({self.name})>"
+
+@dataclass
+class Command:
+    name: str
+    
+    def __repr__(self):
+        return f"<Command({self.name})>"
+
+@dataclass
+class FlowStep:
+    type: str # command, event, operation
+    name: str
+    delegate: Optional[str] = None
+    emits: List[str] = field(default_factory=list)
+    triggers: List[str] = field(default_factory=list) # For events
+
+    def __repr__(self):
+        return f"<FlowStep({self.type}: {self.name})>"
+
+@dataclass
+class Flow:
+    name: str
+    steps: List[FlowStep] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"<Flow({self.name})>"
+
+@dataclass
+class Coordination:
+    name: str
+    steps: List[str] = field(default_factory=list) # List of coordination paths
+
+    def __repr__(self):
+        return f"<Coordination({self.name})>"
+
+@dataclass
+class Application:
+    commands: List[Command] = field(default_factory=list)
+    flows: List[Flow] = field(default_factory=list)
+    services: List[Service] = field(default_factory=list)
+    coordinations: List[Coordination] = field(default_factory=list)
+
+    def __repr__(self):
+        return "<Application>"
+
+@dataclass
+class CommandEvent:
+    name: str
+    attributes: List[Attribute] = field(default_factory=list)
+    operations: List[Operation] = field(default_factory=list) # Usually empty for events but allowed by grammar
+    extends: Optional[str] = None
+    is_abstract: bool = False
+
+    def get_attribute(self, attr_name: str) -> Optional[Attribute]:
+        return next((a for a in self.attributes if a.name == attr_name), None)
+    
+    def __repr__(self):
+        return f"<CommandEvent({self.name})>"
+
+@dataclass
+class DataTransferObject:
+    name: str
+    attributes: List[Attribute] = field(default_factory=list)
+    operations: List[Operation] = field(default_factory=list)
+    extends: Optional[str] = None
+
+    def get_attribute(self, attr_name: str) -> Optional[Attribute]:
+        return next((a for a in self.attributes if a.name == attr_name), None)
+    
+    def __repr__(self):
+        return f"<DataTransferObject({self.name})>"
+
+@dataclass
+class Module:
+    name: str
+    aggregates: List[Aggregate] = field(default_factory=list)
+    services: List[Service] = field(default_factory=list)
+    domain_objects: List[Any] = field(default_factory=list) # Entities, VOs, etc.
+    application: Optional[Application] = field(default=None, repr=False)
+    
+    def __repr__(self):
+        return f"<Module({self.name})>"
 
 from pathlib import Path
 
@@ -242,7 +548,12 @@ from pathlib import Path
 class CML:
     domains: List[Domain] = field(default_factory=list)
     context_maps: List[ContextMap] = field(default_factory=list)
+    contexts: List[Context] = field(default_factory=list)
     use_cases: List[UseCase] = field(default_factory=list)
+    user_stories: List[UserStory] = field(default_factory=list)
+    stakeholder_groups: List[StakeholderGroup] = field(default_factory=list)
+    stakeholders: List[Stakeholder] = field(default_factory=list)
+    value_registers: List[ValueRegister] = field(default_factory=list)
     parse_results: Optional['ParseResult'] = field(default=None, repr=False)
 
     def get_domain(self, domain_name: str) -> Optional[Domain]:
@@ -250,6 +561,39 @@ class CML:
 
     def get_context_map(self, map_name: str) -> Optional[ContextMap]:
         return next((cm for cm in self.context_maps if cm.name == map_name), None)
+
+    def get_context(self, context_name: str) -> Optional[Context]:
+        return next((c for c in self.contexts if c.name == context_name), None)
+
+    def get_aggregate(self, aggregate_name: str, *, context_name: Optional[str] = None) -> Optional[Aggregate]:
+        contexts = self.contexts
+        if context_name:
+            contexts = [c for c in contexts if c.name == context_name]
+        for ctx in contexts:
+            agg = ctx.get_aggregate(aggregate_name)
+            if agg:
+                return agg
+        return None
+
+    def get_entity(
+        self,
+        entity_name: str,
+        *,
+        context_name: Optional[str] = None,
+        aggregate_name: Optional[str] = None,
+    ) -> Optional[Entity]:
+        contexts = self.contexts
+        if context_name:
+            contexts = [c for c in contexts if c.name == context_name]
+        for ctx in contexts:
+            aggregates = ctx.aggregates
+            if aggregate_name:
+                aggregates = [a for a in aggregates if a.name == aggregate_name]
+            for agg in aggregates:
+                ent = agg.get_entity(entity_name)
+                if ent:
+                    return ent
+        return None
 
     def get_use_case(self, use_case_name: str) -> Optional[UseCase]:
         return next((uc for uc in self.use_cases if uc.name == use_case_name), None)
