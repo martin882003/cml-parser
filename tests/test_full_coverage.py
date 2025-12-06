@@ -1,9 +1,11 @@
 import os
 import sys
 import pytest
+from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 # Ensure package import works without installation
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
+sys.path.insert(0, str(ROOT / "src"))
 
 from cml_parser.parser import parse_file
 from cml_parser.cml_objects import (
@@ -18,7 +20,8 @@ from cml_parser.cml_objects import (
 )
 
 def test_full_coverage():
-    cml = parse_file("test_full_coverage.cml")
+    cml_file = Path(__file__).with_name("test_full_coverage.cml")
+    cml = parse_file(str(cml_file))
     
     # 1. Verify Context Map & Relationships
     assert len(cml.context_maps) == 1
@@ -83,6 +86,3 @@ def test_full_coverage():
     assert len(cluster.values) == 1
     assert cluster.values[0].name == "EfficiencyValue"
     assert cluster.values[0].is_core is True
-
-if __name__ == "__main__":
-    test_full_coverage()

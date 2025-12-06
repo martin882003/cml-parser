@@ -3,15 +3,17 @@ import pytest
 import sys
 import runpy
 import importlib
+from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 # Add src to path for testing without installing
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+sys.path.insert(0, str(ROOT / "src"))
 
 from cml_parser import parse_file_safe
 from cml_parser import parser as parser_mod
 from cml_parser.cml_objects import RelationshipType, SubdomainType
 
-EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), "examples")
+EXAMPLES_DIR = ROOT / "examples"
 
 def get_cml_files():
     cml_files = []
@@ -37,8 +39,6 @@ def test_main_without_args(capsys):
 
 
 def test_main_with_file(capsys):
-    from pathlib import Path
-
     tmp = Path(EXAMPLES_DIR) / "tmp_main_test.cml"
     tmp.write_text("ContextMap Demo {}\n", encoding="utf-8")
 

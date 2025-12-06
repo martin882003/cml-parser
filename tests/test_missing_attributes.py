@@ -1,8 +1,10 @@
 import os
 import sys
+from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 # Ensure package import works without installation
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+sys.path.insert(0, str(ROOT / "src"))
 
 from cml_parser.parser import parse_file_safe
 
