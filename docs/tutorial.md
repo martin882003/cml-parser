@@ -1,6 +1,12 @@
 # Learn CML
 
-Context Mapper Language (CML) es un DSL creado por el proyecto [Context Mapper](https://contextmapper.org/) para modelar Domain-Driven Design de punta a punta. Con CML puedes describir:
+Context Mapper Language (CML) es un DSL creado por el proyecto [Context Mapper](https://contextmapper.org/) para modelar Domain-Driven Design de punta a punta. La referencia oficial está en la [Language Reference](https://contextmapper.org/docs/language-reference/), que abarca:
+- **Patrones estratégicos:** Context Maps, Bounded Contexts, Subdomains y relaciones (Partnership, Shared Kernel, Customer/Supplier, ACL, etc.).
+- **Patrones tácticos:** Agregados, Entidades, Servicios, Value Objects y Domain Events (inspirados en Sculptor DSL).
+- **Modelo semántico:** reglas que garantizan coherencia entre contextos y relaciones.
+- **Extras:** capa de aplicación y procesos (flows de commands/events), requerimientos (UseCase, UserStory) e importación de archivos CML.
+
+Con CML puedes describir:
 - La vista estratégica (Context Maps, Bounded Contexts, Dominios/Subdominios y relaciones).
 - La vista táctica (Agregados, Entidades, Value Objects, Servicios, Eventos, Enums).
 - La capa de aplicación (commands, events, DTOs y flows).
