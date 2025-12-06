@@ -219,7 +219,7 @@ attribute
 // Operation rule - allow missing parentheses and trailing hints
 operation
     : visibility? ('def' | '*')? returnType=type? name
-      ('(' parameterList? ')')?
+      '(' parameterList? ')'
       operationHint?
       operationTail?
       ('throws' idList)?
