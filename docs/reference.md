@@ -10,6 +10,34 @@ A quick tour of the main types exposed by the parser. All objects are plain data
 - `value_registers`
 - Helpers: `get_domain`, `get_subdomain`, `get_context_map`, `get_context`, `get_aggregate`, `get_entity`, `get_use_case`
 
+## Requirements Analysis
+
+### `UseCase`
+- `name`, `actor`, `interactions`
+- `benefit`, `scope`, `level`
+
+### `UserStory`
+- `name`, `role`, `feature`, `benefit`
+
+### `Stakeholder`
+- `name`, `influence`, `interest`, `priority`, `impact`, `consequences`
+
+### `StakeholderGroup`
+- `name`, `stakeholders` (list of `Stakeholder`)
+
+### `ValueRegister`
+- `name`, `context`
+- `values` (list of `Value`)
+- `clusters` (list of `ValueCluster`)
+
+### `Value`
+- `name`, `is_core`, `demonstrator`
+- `stakeholders` (list of `Stakeholder`)
+
+### `ValueCluster`
+- `name`, `core_value`, `demonstrator`
+- `values` (list of `Value`)
+
 ## Strategic DDD
 
 ### `Domain`
@@ -75,8 +103,10 @@ A quick tour of the main types exposed by the parser. All objects are plain data
 
 ## Application layer extensions
 
-- `Application`: `commands`, `flows`
-- `CommandEvent`, `DataTransferObject`, `Module`
-- `Flow` and `FlowStep` support simple command/event flows in the application layer.
+- `Application`: `commands`, `flows`, `coordinations`, `services`
+- `CommandEvent`, `DataTransferObject`
+- `Module`: `name`, `aggregates`, `services`, `domain_objects`
+- `Flow` and `FlowStep`: support simple command/event flows.
+- `Coordination`: `name`, `steps` (list of coordination strings).
 
 For concrete examples of each object in context, see `test_full_coverage.cml` and `test_tactical_ddd.py`.

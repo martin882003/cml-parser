@@ -166,6 +166,46 @@ print("Atributos:", [(a.name, a.type, a.is_reference) for a in order.attributes]
 Atributos: [('id', 'OrderId', True), ('total', 'Money', False)]
 ```
 
+## Análisis de Requerimientos
+
+### Stakeholders y Registro de Valor
+
+**cml:** `requirements.cml`
+```cml
+StakeholderGroup Customers {
+  Stakeholder PremiumUsers {
+    influence = "Medium"
+    interest = "High"
+  }
+}
+
+ValueRegister RetailValues {
+  Value Efficiency {
+    stakeholders PremiumUsers
+  }
+}
+```
+
+**parse:**
+```python
+from cml_parser import parse_file_safe
+
+cml = parse_file_safe("requirements.cml")
+group = cml.stakeholder_groups[0]
+val_reg = cml.value_registers[0]
+
+print(f"Grupo: {group.name}")
+print(f"Stakeholder: {group.stakeholders[0].name}")
+print(f"Valor: {val_reg.values[0].name} para {val_reg.values[0].stakeholders[0].name}")
+```
+
+**output:**
+```
+Grupo: Customers
+Stakeholder: PremiumUsers
+Valor: Efficiency para PremiumUsers
+```
+
 ## Validación por CLI
 
 Valida cualquier archivo y obtené un resumen:

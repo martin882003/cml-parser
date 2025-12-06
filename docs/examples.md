@@ -209,6 +209,46 @@ Commands: ['RegisterCustomer']
 Flow steps: [('command', 'RegisterCustomer'), ('event', 'CustomerRegistered')]
 ```
 
+## Requirements Analysis
+
+### Stakeholders and Value Register
+
+**cml:** `requirements.cml`
+```cml
+StakeholderGroup Customers {
+  Stakeholder PremiumUsers {
+    influence = "Medium"
+    interest = "High"
+  }
+}
+
+ValueRegister RetailValues {
+  Value Efficiency {
+    stakeholders PremiumUsers
+  }
+}
+```
+
+**parse:**
+```python
+from cml_parser import parse_file_safe
+
+cml = parse_file_safe("requirements.cml")
+group = cml.stakeholder_groups[0]
+val_reg = cml.value_registers[0]
+
+print(f"Group: {group.name}")
+print(f"Stakeholder: {group.stakeholders[0].name}")
+print(f"Value: {val_reg.values[0].name} for {val_reg.values[0].stakeholders[0].name}")
+```
+
+**output:**
+```
+Group: Customers
+Stakeholder: PremiumUsers
+Value: Efficiency for PremiumUsers
+```
+
 ## CLI validation
 
 Validate any file and get a summary:

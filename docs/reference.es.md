@@ -10,6 +10,34 @@ Recorrido rápido por los tipos principales expuestos por el parser. Todos son d
 - `value_registers`
 - Helpers: `get_domain`, `get_subdomain`, `get_context_map`, `get_context`, `get_aggregate`, `get_entity`, `get_use_case`
 
+## Análisis de Requerimientos
+
+### `UseCase`
+- `name`, `actor`, `interactions`
+- `benefit`, `scope`, `level`
+
+### `UserStory`
+- `name`, `role`, `feature`, `benefit`
+
+### `Stakeholder`
+- `name`, `influence`, `interest`, `priority`, `impact`, `consequences`
+
+### `StakeholderGroup`
+- `name`, `stakeholders` (lista de `Stakeholder`)
+
+### `ValueRegister`
+- `name`, `context`
+- `values` (lista de `Value`)
+- `clusters` (lista de `ValueCluster`)
+
+### `Value`
+- `name`, `is_core`, `demonstrator`
+- `stakeholders` (lista de `Stakeholder`)
+
+### `ValueCluster`
+- `name`, `core_value`, `demonstrator`
+- `values` (lista de `Value`)
+
 ## DDD estratégico
 
 ### `Domain`
@@ -75,8 +103,10 @@ Recorrido rápido por los tipos principales expuestos por el parser. Todos son d
 
 ## Extensiones de capa de aplicación
 
-- `Application`: `commands`, `flows`
-- `CommandEvent`, `DataTransferObject`, `Module`
-- `Flow` y `FlowStep` soportan flujos simples de comando/evento en la capa de aplicación.
+- `Application`: `commands`, `flows`, `coordinations`, `services`
+- `CommandEvent`, `DataTransferObject`
+- `Module`: `name`, `aggregates`, `services`, `domain_objects`
+- `Flow` y `FlowStep`: soportan flujos simples de comando/evento.
+- `Coordination`: `name`, `steps` (lista de cadenas de coordinación).
 
 Para ejemplos concretos en contexto, mira `test_full_coverage.cml` y `test_tactical_ddd.py`.
