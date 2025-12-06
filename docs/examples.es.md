@@ -26,6 +26,11 @@ for rel in cm.relationships:
     print(rel.type, rel.left.name, "->", rel.right.name, rel.implementation_technology)
 ```
 
+**salida:**
+```
+ACL Billing -> Shipping REST
+```
+
 ## Dominio + Subdominios
 
 **cml:** `domain.cml`
@@ -47,6 +52,11 @@ cml = parse_file_safe("domain.cml")
 dom = cml.get_domain("Commerce")
 core = dom.get_subdomain("Core")
 print("Implementaciones Core:", [c.name for c in core.implementations])
+```
+
+**salida:**
+```
+Implementaciones Core: ['Store']
 ```
 
 ## Agregado táctico
@@ -84,6 +94,11 @@ ctx = cml.get_context("Sales")
 agg = ctx.get_aggregate("OrderAgg")
 order = agg.get_entity("Order")
 print("Atributos:", [(a.name, a.type, a.is_reference) for a in order.attributes])
+```
+
+**salida:**
+```
+Atributos: [('id', 'OrderId', True), ('total', 'Money', False)]
 ```
 
 ## Validación por CLI
