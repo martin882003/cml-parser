@@ -42,4 +42,6 @@ where = ["src"]
 [dependency-groups]
 dev = [
     "antlr4-tools>=0.2.2",
+    "mkdocs-material>=9.5.0",
+    "mkdocs-static-i18n>=1.2.0",
 ]

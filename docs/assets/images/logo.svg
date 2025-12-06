@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">CML Parser logo</title>
+  <desc id="desc">Flat white hexagon with CML letters.</desc>
+  <path fill="#ffffff" d="M80 0l72 40v80L80 160 8 120V40z"/>
+  <text x="80" y="100" text-anchor="middle" font-family="Inter, 'Segoe UI', sans-serif" font-weight="800" font-size="60" fill="#000000">
+    CML
+  </text>
+</svg>

@@ -1,0 +1,58 @@
+site_name: CML Parser
+site_description: Context Mapper Language parser for Python with ANTLR4
+site_url: https://martin882003.github.io/cml_parser
+repo_url: https://github.com/martin882003/cml_parser
+repo_name: martin882003/cml_parser
+theme:
+  name: material
+  language: en
+  logo: assets/images/logo.svg
+  favicon: assets/images/logo.svg
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: pink
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+  icon:
+    repo: fontawesome/brands/github
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - tables
+  - attr_list
+  - def_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+plugins:
+  - search
+  - i18n:
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: es
+          name: Español
+          build: true
+nav:
+  - index.md
+  - quickstart.md
+  - usage.md
+  - reference.md
