@@ -54,6 +54,7 @@ plugins:
 nav:
   - index.md
   - quickstart.md
+  - tutorial.md
   - usage.md
   - examples.md
   - reference.md
