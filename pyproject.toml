@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cml-parser"
-version = "0.2.4"
+version = "0.2.5"
 description = "A Python parser for Context Mapper DSL (CML)"
 readme = "README.md"
 authors = [

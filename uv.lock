@@ -158,7 +158,7 @@ wheels = [
 
 [[package]]
 name = "cml-parser"
-version = "0.2.4"
+version = "0.2.5"
 source = { editable = "." }
 dependencies = [
     { name = "antlr4-python3-runtime" },
