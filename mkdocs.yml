@@ -58,6 +58,10 @@ plugins:
             Requirements: Requerimientos
             Tactical DDD: DDD Táctico
             Application Layer: Capa de aplicación
+extra:
+  analytics:
+    provider: google
+    property: G-XCMEXKWTSM
 nav:
   - index.md
   - quickstart.md
