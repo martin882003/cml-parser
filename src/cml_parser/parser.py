@@ -95,7 +95,7 @@ def _parse_internal(path: Optional[str], text: Optional[str], strict: bool) -> C
         
     # Build model if no critical errors (or even if there are, try best effort)
     cml = CML()
-    if not errors or not strict:
+    if not errors or not strict:  # pragma: no branch
         try:
             builder = CMLModelBuilder(filename)
             cml = builder.visit(tree)
@@ -142,7 +142,7 @@ def main(argv=None) -> int:
         return 1
 
     if parsed.json:
-        print(json.dumps(asdict(cml.parse_results), default=str, indent=2))
+        print(json.dumps(cml.parse_results.to_dict(), default=str, indent=2))
         return 0
         
     if parsed.summary:

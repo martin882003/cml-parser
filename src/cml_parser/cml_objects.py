@@ -595,6 +595,16 @@ class CML:
                     return ent
         return None
 
+    def get_subdomain(self, subdomain_name: str, *, domain_name: Optional[str] = None) -> Optional[Subdomain]:
+        domains = self.domains
+        if domain_name:
+            domains = [d for d in domains if d.name == domain_name]
+        for domain in domains:
+            sd = domain.get_subdomain(subdomain_name)
+            if sd:
+                return sd
+        return None
+
     def get_use_case(self, use_case_name: str) -> Optional[UseCase]:
         return next((uc for uc in self.use_cases if uc.name == use_case_name), None)
 
