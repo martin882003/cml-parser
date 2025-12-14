@@ -18,7 +18,7 @@ def test_builder_covers_modules_usecases_and_values():
     ContextMap Map { contains BC }
     BoundedContext BC {
       type = FEATURE
-      knowledgeLevel = ABSTRACT
+      knowledgeLevel = META
       responsibilities = "Keep things"
       implementationTechnology = "Python"
 
@@ -88,7 +88,7 @@ def test_builder_covers_modules_usecases_and_values():
     # Bounded context level attributes
     bc = model.get_context("BC")
     assert bc.type == "FEATURE"
-    assert bc.knowledge_level == "ABSTRACT"
+    assert bc.knowledge_level == "META"
     assert bc.responsibilities == "Keep things"
     assert bc.implementation_technology == "Python"
 

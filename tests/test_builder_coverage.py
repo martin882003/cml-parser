@@ -39,7 +39,7 @@ def test_builder_coverage_scenarios():
 
     BoundedContext AggrContext {
         Aggregate Aggr {
-            knowledgeLevel = ABSTRACT
+            knowledgeLevel = META
             responsibilities = "AggResp"
     
             // Aggregate does not have vision, so this should trigger the check failure path (coverage)
@@ -111,7 +111,7 @@ def test_builder_coverage_scenarios():
 
     # Aggregate attributes
     agg = model.get_aggregate("Aggr", context_name=None)
-    assert agg.knowledge_level == "ABSTRACT"
+    assert agg.knowledge_level == "META"
     assert agg.responsibilities == "AggResp"
     # Ensure ignored attributes didn't crash
     # (Checking coverage of the 'else' or 'if not hasattr' branches)
