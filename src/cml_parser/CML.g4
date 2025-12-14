@@ -15,7 +15,16 @@ imports
     ;
 
 topLevel
-    : contextMap
+    : scUseCase
+    | scAggregate
+    | scEntity
+    | scSecurityAccessGroup
+    | scSeparatedSecurityZone
+    | scSharedOwnerGroup
+    | scPredefinedService
+    | scCompatibilities
+    | tacticDDDApplication
+    | contextMap
     | boundedContext
     | domain
     | useCase
@@ -37,19 +46,19 @@ contextMapSetting
     : 'type' '='? contextMapType
     | 'state' '='? contextMapState
     | 'contains' idList
-    | 'realizes' idList
+
     ;
 
 contextMapType
-    : 'SYSTEM_LANDSCAPE' | 'ORGANIZATIONAL'
+    : 'UNDEFINED' | 'SYSTEM_LANDSCAPE' | 'ORGANIZATIONAL'
     ;
 
 contextMapState
-    : 'AS_IS' | 'TO_BE'
+    : 'UNDEFINED' | 'AS_IS' | 'TO_BE'
     ;
 
 relationship
-    : relationshipEndpoint relationshipConnection relationshipEndpoint (':' ID)? ('{' relationshipAttribute* '}')?
+    : relationshipEndpoint relationshipConnection relationshipEndpointRight (':' ID)? ('{' relationshipAttribute* '}')?
     ;
 
 relationshipConnection
@@ -60,8 +69,12 @@ relationshipEndpoint
     : relationshipRoles? name relationshipRoles?
     ;
 
+relationshipEndpointRight
+    : relationshipRoles? name ({self._input.LT(-1) is not None and self._input.LT(1).line == self._input.LT(-1).line}? relationshipRoles)?
+    ;
+
 relationshipKeyword
-    : 'Customer-Supplier' | 'Upstream-Downstream' | 'Downstream-Upstream' | 'Partnership' | 'Shared-Kernel'
+    : 'Customer-Supplier' | 'Supplier-Customer' | 'Upstream-Downstream' | 'Downstream-Upstream' | 'Partnership' | 'Shared-Kernel'
     ;
 
 relationshipRoles
@@ -83,28 +96,40 @@ relationshipAttribute
     ;
 
 downstreamRights
-    : 'VETO_RIGHT' | 'INFLUENCER'
+    : 'VETO_RIGHT' | 'INFLUENCER' | 'OPINION_LEADER' | 'DECISION_MAKER' | 'MONOPOLIST'
     ;
 
 boundedContext
-    : 'BoundedContext' name ('implements' idList)? ('realizes' idList)? body=contentBlock?
+    : 'BoundedContext' name boundedContextLinkClause* body=contentBlock?
+    ;
+
+boundedContextLinkClause
+    : 'implements' idList
+    | 'realizes' idList
+    | 'refines' name
     ;
 
 boundedContextAttribute
     : 'type' '='? boundedContextType
     | 'domainVisionStatement' '='? STRING
     | 'implementationTechnology' '='? STRING
-    | 'responsibilities' '='? STRING
+    | 'responsibilities' '='? STRING (',' STRING)*
     | 'knowledgeLevel' '='? knowledgeLevel
+    | 'businessModel' '='? STRING
+    | 'evolution' '='? evolutionType
     | 'realizes' '='? idList
     ;
 
 boundedContextType
-    : 'FEATURE' | 'SYSTEM' | 'APPLICATION' | 'TEAM'
+    : 'UNDEFINED' | 'FEATURE' | 'SYSTEM' | 'APPLICATION' | 'TEAM'
     ;
 
 knowledgeLevel
-    : 'CONCRETE' | 'ABSTRACT'
+    : 'META' | 'CONCRETE'
+    ;
+
+evolutionType
+    : 'GENESIS' | 'CUSTOM_BUILT' | 'PRODUCT' | 'COMMODITY' | 'UNDEFINED'
     ;
 
 domain
@@ -112,11 +137,11 @@ domain
     ;
 
 subdomain
-    : 'Subdomain' name ('type' subdomainType)? body=contentBlock?
+    : 'Subdomain' name ('supports' idList)? body=contentBlock?
     ;
 
 subdomainType
-    : 'CORE_DOMAIN' | 'SUPPORTING_DOMAIN' | 'GENERIC_SUBDOMAIN'
+    : 'UNDEFINED' | 'CORE_DOMAIN' | 'SUPPORTING_DOMAIN' | 'GENERIC_SUBDOMAIN'
     ;
 
 module
@@ -124,6 +149,23 @@ module
     ;
 
 // --- Tactic DDD (Sculptor) ---
+
+tacticDDDApplication
+    : STRING? 'TacticDDDApplication' name '{'
+      'basePackage' '=' qualifiedName
+      tacticDDDElement*
+      '}'
+    | STRING? 'ApplicationPart' name '{'
+      tacticDDDElement*
+      '}'
+    ;
+
+tacticDDDElement
+    : service
+    | resource
+    | consumer
+    | domainObject
+    ;
 
 aggregate
     : 'Aggregate' name body=contentBlock?
@@ -138,92 +180,344 @@ simpleDomainObjectOrEnum
     ;
 
 simpleDomainObject
-    : entity | valueObject | domainEvent | commandEvent | dataTransferObject
+    : entity
+    | valueObject
+    | domainEvent
+    | commandEvent
+    | dataTransferObject
+    | trait
+    | basicType
     ;
 
 entity
-    : 'abstract'? 'Entity' name ('extends' '@'? name)? body=entityBody?
+    : 'abstract'? 'Entity' name ('extends' '@'? name)? ('with' traitRef (',' traitRef)*)* body=entityBody?
     ;
 
 entityBody
     : '{'
-      'aggregateRoot'?
-      feature*
+      (entityFlag | feature)*
       '}'
     ;
 
+entityFlag
+    : 'belongsTo' ('@')? qualifiedName
+    | 'validate' '=' STRING
+    | 'package' '=' qualifiedName
+    | 'inheritanceType' '=' STRING
+    | 'discriminatorColumn' '=' STRING
+    | 'discriminatorValue' '=' STRING
+    | 'discriminatorType' '=' STRING
+    | 'discriminatorLength' '=' STRING
+    | 'databaseTable' '=' STRING
+    | notPrefix? 'auditable'
+    | notPrefix? 'optimisticLocking'
+    | notPrefix? 'cache'
+    | 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | notPrefix? 'immutable'
+    | 'aggregateRoot'
+    ;
+
 valueObject
-    : 'abstract'? 'ValueObject' name ('extends' '@'? name)? body=valueObjectBody?
+    : 'abstract'? 'ValueObject' name ('extends' '@'? name)? ('with' traitRef (',' traitRef)*)* body=valueObjectBody?
     ;
 
 valueObjectBody
     : '{'
+      valueObjectFlag*
       feature*
       '}'
     ;
 
+valueObjectFlag
+    : 'belongsTo' ('@')? qualifiedName
+    | 'package' '=' qualifiedName
+    | 'validate' '=' STRING
+    | 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | notPrefix? 'immutable'
+    | notPrefix? 'persistent'
+    | notPrefix? 'cache'
+    | notPrefix? 'optimisticLocking'
+    | 'aggregateRoot'
+    | 'databaseTable' '=' STRING
+    | 'inheritanceType' '=' STRING
+    | 'discriminatorColumn' '=' STRING
+    | 'discriminatorValue' '=' STRING
+    | 'discriminatorType' '=' STRING
+    | 'discriminatorLength' '=' STRING
+    ;
+
 domainEvent
-    : 'abstract'? 'DomainEvent' name ('extends' '@'? name)? body=domainEventBody?
+    : 'abstract'? ('DomainEvent' | 'Event') name ('extends' '@'? name)? ('with' traitRef (',' traitRef)*)* body=domainEventBody?
     ;
 
 domainEventBody
     : '{'
-      'aggregateRoot'?
-      'persistent'?
-      feature*
+      (domainEventFlag | feature)*
       '}'
     ;
 
+domainEventFlag
+    : 'belongsTo' ('@')? qualifiedName
+    | 'package' '=' qualifiedName
+    | 'validate' '=' STRING
+    | 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | notPrefix? 'cache'
+    | 'databaseTable' '=' STRING
+    | 'inheritanceType' '=' STRING
+    | 'discriminatorColumn' '=' STRING
+    | 'discriminatorValue' '=' STRING
+    | 'discriminatorType' '=' STRING
+    | 'discriminatorLength' '=' STRING
+    | 'aggregateRoot'
+    | 'persistent'
+    ;
+
 commandEvent
-    : 'abstract'? 'CommandEvent' name ('extends' '@'? name)? body=commandEventBody?
+    : 'abstract'? ('CommandEvent' | 'Command') name ('extends' '@'? name)? ('with' traitRef (',' traitRef)*)* body=commandEventBody?
     ;
 
 commandEventBody
     : '{'
+      commandEventFlag*
       feature*
       '}'
     ;
 
+commandEventFlag
+    : 'belongsTo' ('@')? qualifiedName
+    | 'package' '=' qualifiedName
+    | 'validate' '=' STRING
+    | 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | notPrefix? 'cache'
+    | 'persistent'
+    | 'aggregateRoot'
+    | 'databaseTable' '=' STRING
+    | 'inheritanceType' '=' STRING
+    | 'discriminatorColumn' '=' STRING
+    | 'discriminatorValue' '=' STRING
+    | 'discriminatorType' '=' STRING
+    | 'discriminatorLength' '=' STRING
+    ;
+
+trait
+    : 'Trait' name traitBody?
+    ;
+
+traitBody
+    : '{'
+      traitFlag*
+      feature*
+      '}'
+    ;
+
+traitFlag
+    : 'package' '=' qualifiedName
+    | 'hint' '=' STRING
+    ;
+
+traitRef
+    : '@'? name
+    ;
+
 dataTransferObject
-    : 'DataTransferObject' name ('extends' '@'? name)? body=dtoBody?
+    : 'DataTransferObject' name ('extends' '@'? name)? dtoModifier* body=dtoBody?
     ;
 
 dtoBody
     : '{'
+      dtoFlag*
       feature*
       '}'
     ;
 
+dtoFlag
+    : 'package' '=' qualifiedName
+    | 'validate' ('=' STRING)?
+    | 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    ;
+
+dtoModifier
+    : 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | 'validate' '=' STRING
+    ;
+
 enumDecl
     : 'enum' name '{'
-      'aggregateLifecycle'?
-      idList
-      ';'?
+      enumOption*
+      enumAttribute*
+      (enumValue (',' enumValue)* ';'?)?
       '}'
+    ;
+
+enumOption
+    : 'package' '=' qualifiedName
+    | 'hint' '=' STRING
+    | 'aggregateLifecycle'
+    | 'ordinal'
+    ;
+
+enumAttribute
+    : type name 'key'? ';'?
+    ;
+
+enumValue
+    : name ('(' enumParameter (',' enumParameter)* ')')?
+    ;
+
+enumParameter
+    : STRING
+    | INT
+    ;
+
+basicType
+    : 'BasicType' name ('with' traitRef (',' traitRef)*)* body=basicTypeBody?
+    ;
+
+basicTypeBody
+    : '{'
+      basicTypeFlag*
+      feature*
+      '}'
+    ;
+
+basicTypeFlag
+    : 'belongsTo' ('@')? qualifiedName
+    | 'package' '=' qualifiedName
+    | 'validate' '=' STRING
+    | 'gap'
+    | 'nogap'
+    | 'hint' '=' STRING
+    | notPrefix? 'immutable'
+    | notPrefix? 'cache'
     ;
 
 // Tactical DDD Features - The core fix for attribute parsing
 feature
-    : repository
+    : association
+    | repository
     | operation
     | attribute
     // Fallback to swallow unrecognized statements inside DDD blocks
     | rawStatement
     ;
 
-// Explicit attribute rule to avoid ambiguity
-attribute
-    : visibility? reference='-'? type name 'key'? ';'?
+association
+    : ('--' | 'association') STRING? reference='@'? type name attributeOption* ';'?
+    | ('--' | 'association') STRING? reference='@'? type ';'?
     ;
 
-// Operation rule - allow missing parentheses and trailing hints
+// Explicit attribute rule to avoid ambiguity
+attribute
+    : STRING? visibility? reference=('-' | 'reference')? type name 'key'? attributeOption* attributeAssociationLabel? ';'?
+    ;
+
+attributeAssociationLabel
+    : ('--' | 'association') STRING
+    ;
+
+attributeOption
+    : oppositeHolder
+    | notPrefix? attributeOptionKey (('=' STRING)?)?
+    ;
+
+notPrefix
+    : 'not' | '!'
+    ;
+
+attributeOptionKey
+    : 'required'
+    | 'notEmpty'
+    | 'notBlank'
+    | 'nullable'
+    | 'unique'
+    | 'index'
+    | 'changeable'
+    | 'persistent'
+    | 'immutable'
+    | 'transient'
+    | 'cache'
+    | 'inverse'
+    | 'valid'
+    | 'email'
+    | 'future'
+    | 'past'
+    | 'pattern'
+    | 'size'
+    | 'min'
+    | 'max'
+    | 'decimalMax'
+    | 'decimalMin'
+    | 'digits'
+    | 'length'
+    | 'range'
+    | 'scriptAssert'
+    | 'url'
+    | 'hint'
+    | 'creditCardNumber'
+    | 'assertTrue'
+    | 'assertFalse'
+    | 'cascade'
+    | 'fetch'
+    | 'databaseColumn'
+    | 'databaseType'
+    | 'databaseJoinTable'
+    | 'databaseJoinColumn'
+    | 'orderColumn'
+    | 'validate'
+    | 'orderby'
+    ;
+
+oppositeHolder
+    : 'opposite' (('=' STRING) | name)
+    | '<->' name
+    ;
+
 operation
-    : visibility? ('def' | '*')? returnType=type? name
+    : operationWithParams
+    | operationNoParams
+    ;
+
+// Service/Resource operations in Xtext allow omitting the `()` when there are no parameters.
+// Keep this scoped to Service/Resource bodies to avoid ambiguity with Attributes in domain objects.
+callableOperationNoParens
+    : STRING? visibility? returnType=type name operationClause* ';'?
+    | STRING? visibility? name operationClause* ';'?
+    ;
+
+operationWithParams
+    : operationPrefix? returnType=type? name
       '(' parameterList? ')'
-      operationHint?
-      operationTail?
-      ('throws' idList)?
+      operationClause*
       ';'?
+    ;
+
+operationNoParams
+    : ('def' | '*') 'abstract'? visibility? returnType=type? name
+      operationClause*
+      ';'?
+    ;
+
+operationPrefix
+    : ('def' | '*') 'abstract'? visibility?
+    | visibility ('def' | '*')?
     ;
 
 operationHint
@@ -234,8 +528,42 @@ operationHintType
     : 'read-only' | 'read' | 'write'
     ;
 
+operationClause
+    : operationOption
+    | operationHint
+    | operationTail
+    | throwsClause
+    ;
+
+throwsClause
+    : 'throws' qualifiedNameList
+    ;
+
+operationOption
+    : 'hint' '=' STRING
+    | httpMethod
+    | 'path' '=' STRING
+    | 'return' '=' STRING
+    ;
+
+httpMethod
+    : 'GET' | 'POST' | 'PUT' | 'DELETE'
+    ;
+
 operationTail
-    : ('publish' | 'subscribe') 'to' (~(';' | '}'))+
+    : 'publish' eventTypeRef? 'to' operationTarget ('eventBus' '=' name)?
+    | 'subscribe' eventTypeRef? 'to' operationTarget ('eventBus' '=' name)?
+    | (('delegates' 'to') | '=>') '@'? qualifiedName
+    ;
+
+eventTypeRef
+    : '@'? name
+    ;
+
+operationTarget
+    : STRING
+    | channelIdentifier
+    | qualifiedName
     ;
 
 // Fallback for complex operations that don't match standard signature
@@ -261,9 +589,13 @@ contentItem
     | aggregate
     | domainObject
     | service
+    | resource
+    | consumer
     | repository
     | boundedContextAttribute
+    | aggregateAttribute
     | subdomainAttribute
+    | moduleAttribute
     | setting
     | useCase
     | subdomain
@@ -278,8 +610,37 @@ ownerDecl
     : 'owner' '='? name ';'?
     ;
 
+aggregateAttribute
+    : ('useCases' | 'userStories' | 'features' | 'userRequirements') '='? idList ';'?
+    | ('likelihoodForChange' | 'structuralVolatility') '='? volatility ';'?
+    | 'contentVolatility' '='? volatility ';'?
+    | 'availabilityCriticality' '='? criticality ';'?
+    | 'consistencyCriticality' '='? criticality ';'?
+    | 'storageSimilarity' '='? similarity ';'?
+    | 'securityCriticality' '='? criticality ';'?
+    | 'securityZone' '='? STRING ';'?
+    | 'securityAccessGroup' '='? STRING ';'?
+    ;
+
+volatility
+    : 'UNDEFINED' | 'NORMAL' | 'RARELY' | 'OFTEN'
+    ;
+
+criticality
+    : 'UNDEFINED' | 'NORMAL' | 'HIGH' | 'LOW'
+    ;
+
+similarity
+    : 'UNDEFINED' | 'NORMAL' | 'HUGE' | 'TINY'
+    ;
+
 setting
     : 'basePackage' '=' qualifiedName ';'?
+    ;
+
+moduleAttribute
+    : 'external'
+    | 'hint' '=' STRING
     ;
 
 parameter
@@ -292,6 +653,8 @@ parameterList
 
 type
     : collectionType '<' innerType=type '>'
+    | 'Map' '<' mapKeyType=type ',' mapValueType=type '>'
+    | qualifiedName '<' innerType=type '>'
     | '@'? qualifiedName
     ;
 
@@ -300,15 +663,65 @@ collectionType
     ;
 
 service
-    : 'Service' name serviceBody=genericBody?
+    : 'Service' name (serviceModifier | dependency)* serviceBody?
+    ;
+
+serviceBody
+    : '{' serviceBodyElement* '}'
+    ;
+
+serviceBodyElement
+    : serviceModifier
+    | dependency
+    | association
+    | operation
+    | callableOperationNoParens
+    | rawStatement
+    ;
+
+resource
+    : 'Resource' name (resourceModifier | dependency)* resourceBody?
+    ;
+
+resourceBody
+    : '{' resourceBodyElement* '}'
+    ;
+
+resourceBodyElement
+    : resourceModifier
+    | dependency
+    | operation
+    | callableOperationNoParens
+    | rawStatement
+    ;
+
+consumer
+    : 'Consumer' name (consumerModifier | dependency)* consumerBody?
+    ;
+
+consumerBody
+    : '{' consumerBodyElement* '}'
+    ;
+
+consumerBodyElement
+    : consumerModifier
+    | dependency
+    | rawStatement
     ;
 
 repository
-    : 'Repository' name repositoryBody?
+    : 'Repository' name (repositoryModifier | dependency)* repositoryBody?
     ;
 
 repositoryBody
-    : '{' repositoryMethod* '}'
+    : '{' repositoryBodyElement* '}'
+    ;
+
+repositoryBodyElement
+    : repositoryModifier
+    | dependency
+    | repositoryMethod
+    | rawStatement
     ;
 
 repositoryMethod
@@ -318,35 +731,89 @@ repositoryMethod
           | name
       )
       ('(' parameterList? ')')?
-      operationTail?
-      ('throws' idList)?
+      repositoryMethodOption*
       ';'?
     ;
 
-visibility
-    : 'public' | 'private' | 'protected'
+serviceModifier
+    : 'gap'
+    | 'nogap'
+    | 'webservice'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | 'subscribe' 'to' (STRING | channelIdentifier) ('eventBus' '=' name)?
     ;
 
-genericBody
-    : contentBlock
+resourceModifier
+    : 'gap'
+    | 'nogap'
+    | 'scaffold'
+    | 'hint' '=' STRING
+    | 'path' '=' STRING
+    ;
+
+consumerModifier
+    : 'hint' '=' STRING
+    | 'subscribe' 'to' (STRING | channelIdentifier) ('eventBus' '=' name)?
+    | 'unmarshall' 'to' '@'? qualifiedName
+    | ('queueName' | 'topicName') '=' channelIdentifier
+    ;
+
+dependency
+    : ('>' | 'inject') '@'? qualifiedName
+    ;
+
+repositoryModifier
+    : 'gap'
+    | 'nogap'
+    | 'hint' '=' STRING
+    | 'subscribe' 'to' (STRING | channelIdentifier) ('eventBus' '=' name)?
+    ;
+
+repositoryMethodOption
+    : 'throws' qualifiedNameList
+    | 'hint' '=' STRING
+    | 'cache'
+    | 'gap'
+    | 'nogap'
+    | 'construct'
+    | 'build'
+    | 'map'
+    | 'query' '=' STRING
+    | 'condition' '=' STRING
+    | 'select' '=' STRING
+    | 'groupBy' '=' STRING
+    | 'orderBy' '=' STRING
+    | (('delegates' 'to') | '=>') '@'? qualifiedName
+    | 'publish' eventTypeRef? 'to' operationTarget ('eventBus' '=' name)?
+    | 'subscribe' eventTypeRef? 'to' operationTarget ('eventBus' '=' name)?
+    ;
+
+visibility
+    : 'public' | 'private' | 'protected' | 'package'
     ;
 
 // --- Application & choreography ---
 
 application
-    : 'Application' '{' applicationElement* '}'
+    : 'Application' name? '{' applicationElement* '}'
     ;
 
 applicationElement
-    : commandDecl | flow | service | coordination
+    : commandDecl
+    | flow
+    | service
+    | coordination
+    | domainEvent
+    | commandEvent
     ;
 
 commandDecl
-    : 'Command' name ';'?
+    : ('Command' | 'command') name ';'?
     ;
 
 flow
-    : 'Flow' name '{' flowStep* '}'
+    : ('Flow' | 'flow') name '{' flowStep* '}'
     ;
 
 flowStep
@@ -354,7 +821,7 @@ flowStep
     ;
 
 flowCommandStep
-    : 'command' name flowCommandTail? ';'?
+    : 'command' name flowInitiator? flowCommandTail? ';'?
     ;
 
 flowCommandTail
@@ -370,15 +837,19 @@ flowEventTriggerList
     ;
 
 flowOperationStep
-    : 'operation' name flowOperationTail? ';'?
+    : 'operation' name flowInitiator? flowOperationTail? ';'?
     ;
 
 flowOperationTail
     : flowDelegate? flowEmitsClause?
     ;
 
+flowInitiator
+    : '[' 'initiated' 'by' STRING ']'
+    ;
+
 flowDelegate
-    : 'delegates' 'to' name stateTransition
+    : 'delegates' 'to' name ('aggregate')? stateTransition?
     ;
 
 flowInvocationList
@@ -406,7 +877,7 @@ flowEventList
     ;
 
 coordination
-    : 'Coordination' name '{' coordinationStep* '}'
+    : ('Coordination' | 'coordination') name '{' coordinationStep* '}'
     ;
 
 coordinationStep
@@ -420,22 +891,27 @@ coordinationPath
 stateTransition
     : '['
       (idList)?
-      ('->' name (transitionOperator name)*)?
+      ('->' targetState (transitionOperator targetState)*)?
       ']'
     ;
 
+targetState
+    : name ('*')?
+    ;
+
 transitionOperator
-    : 'X' | '+' | 'O'
+    : 'X' | 'x' | '+' | 'O' | 'o'
     ;
 
 // --- Use Cases ---
 
 useCase
-    : 'UseCase' name '{' (useCaseBody | useCaseFreeText)* '}'
+    : 'UseCase' name ('{' (useCaseBody | useCaseFreeText)* '}')?
     ;
 
 useCaseBody
     : useCaseActor
+    | useCaseSecondaryActors
     | useCaseInteractionsBlock
     | useCaseBenefit
     | useCaseScope
@@ -443,15 +919,20 @@ useCaseBody
     ;
 
 useCaseActor
-    : 'actor' STRING
+    : 'actor' '='? STRING
+    ;
+
+useCaseSecondaryActors
+    : 'secondaryActors' '='? STRING (',' STRING)*
     ;
 
 useCaseInteractionsBlock
-    : 'interactions' useCaseInteractionItem+
+    : 'interactions' '='? useCaseInteractionItem+
     ;
 
 useCaseInteractionItem
-    : useCaseReadOperation ','?  
+    : urFeature ','?
+    | useCaseReadOperation ','?  
     | STRING ','?
     | useCaseInteractionId ','?
     ;
@@ -467,12 +948,49 @@ useCaseReadOperation
     : READ STRING WITH ITS STRING (',' STRING)*
     ;
 
+urFeature
+    : urStoryFeature
+    | urNormalFeature
+    ;
+
+urStoryFeature
+    : 'I' 'want' 'to' urVerb urEntityTail
+    | 'I' 'want' 'to' STRING
+    ;
+
+urNormalFeature
+    : urVerb urEntityTail
+    ;
+
+urVerb
+    : READ
+    | ID
+    | 'create'
+    | STRING
+    ;
+
+urEntityTail
+    : urEntityArticle? STRING urEntityAttributes? urContainerEntity?
+    ;
+
+urEntityArticle
+    : 'a' | 'an' | 'the'
+    ;
+
+urEntityAttributes
+    : WITH (ITS | 'their') STRING (',' STRING)*
+    ;
+
+urContainerEntity
+    : ('in' | 'for' | 'to') urEntityArticle? STRING
+    ;
+
 useCaseFreeText
     : (~'}')+
     ;
 
 userStory
-    : 'UserStory' name '{' (userStoryBody | userStoryLine)* '}'
+    : 'UserStory' name ('split' 'by' name)? '{' (userStoryXtextBody | userStoryBody | userStoryLine)* '}'
     ;
 
 userStoryBody
@@ -481,32 +999,85 @@ userStoryBody
       'so' 'that' STRING
     ;
 
+userStoryXtextBody
+    : 'As' ('a' | 'an')? role=STRING
+      urFeature+
+      'so' 'that' benefit=STRING
+      storyValuation?
+    ;
+
+storyValuation
+    : 'and' 'that' promoted+=STRING (',' promoted+=STRING)* ('is' | 'are') 'promoted' ','?
+      'accepting' 'that' harmed+=STRING (',' harmed+=STRING)* ('is' | 'are') ('reduced' | 'harmed')
+    ;
+
 userStoryLine
     : (~'}')+
     ;
 
 name
     : ID
-    | 'X' | 'O' | 'U' | 'D' | 'S' | 'C' | 'P'
+    | 'Map'
+    | 'Service'
+    | 'Event'
+    | 'Command'
+    | 'characteristic'
+    | 'context'
+    | 'in'
+    | 'risk'
+    | 'value'
+    | 'AvailabilityCriticality'
+    | 'ConsistencyCriticality'
+    | 'ContentVolatility'
+    | 'SecurityCriticality'
+    | 'StorageSimilarity'
+    | 'StructuralVolatility'
+    | 'SecurityAccessGroup'
+    | 'SeparatedSecurityZone'
+    | 'SharedOwnerGroup'
+    | 'PredefinedService'
+    | 'Compatibilities'
+    | 'X' | 'x' | 'O' | 'o' | 'U' | 'D' | 'S' | 'C' | 'P'
     | 'ACL' | 'CF' | 'OHS' | 'PL' | 'SK'
+    | 'required' | 'notEmpty' | 'notBlank' | 'nullable' | 'unique' | 'index' | 'changeable'
+    | 'persistent' | 'immutable' | 'transient' | 'cache' | 'inverse' | 'valid'
+    | 'email' | 'future' | 'past' | 'pattern' | 'size' | 'min' | 'max' | 'digits'
+    | 'decimalMax' | 'decimalMin' | 'length' | 'range' | 'scriptAssert' | 'url'
+    | 'hint' | 'creditCardNumber' | 'assertTrue' | 'assertFalse'
+    | 'cascade' | 'fetch' | 'databaseColumn' | 'databaseType'
+    | 'databaseJoinTable' | 'databaseJoinColumn' | 'orderColumn'
+    | 'validate' | 'orderby'
+    | 'As' | 'a' | 'an' | 'I' | 'want' | 'to' | 'do' | 'so' | 'that'
+    | READ | WITH | ITS
+    | 'actor' | 'secondaryActors' | 'interactions' | 'benefit' | 'scope' | 'level'
+    | 'split' | 'by' | 'and' | 'accepting' | 'promoted' | 'reduced' | 'harmed'
+    | 'the' | 'their' | 'description'
+    | 'relatedValue' | 'opposingValue' | 'isCore' | 'Stakeholder' | 'Stakeholders' | 'neutral'
+    | 'protect' | 'create' | 'initiated'
+    | 'useCases' | 'userStories' | 'features' | 'userRequirements'
+    | 'likelihoodForChange' | 'structuralVolatility' | 'contentVolatility'
+    | 'availabilityCriticality' | 'consistencyCriticality' | 'storageSimilarity' | 'securityCriticality'
+    | 'securityZone' | 'securityAccessGroup'
+    | 'external' | 'basePackage'
+    | 'HIGH' | 'MEDIUM' | 'LOW' | 'NORMAL' | 'RARELY' | 'OFTEN' | 'HUGE' | 'TINY' | 'UNDEFINED'
     ;
 
 useCaseBenefit
-    : 'benefit' STRING
+    : 'benefit' '='? STRING
     ;
 
 useCaseScope
-    : 'scope' STRING
+    : 'scope' '='? STRING
     ;
 
 useCaseLevel
-    : 'level' STRING
+    : 'level' '='? STRING
     ;
 
 // --- Stakeholders and Values ---
 
 stakeholderSection
-    : 'Stakeholders' 'of' name '{' stakeholderItem* '}'
+    : 'Stakeholders' ('of' idList)? '{' stakeholderItem* '}'
     ;
 
 stakeholderItem
@@ -522,10 +1093,11 @@ stakeholder
     ;
 
 stakeholderAttribute
-    : 'influence' name
-    | 'interest' name
-    | 'priority' name
-    | 'impact' name
+    : 'influence' '='? name
+    | 'interest' '='? name
+    | 'priority' '='? name
+    | 'impact' '='? name
+    | 'description' '='? STRING
     | consequences
     | consequenceItem
     ;
@@ -539,34 +1111,232 @@ consequenceItem
     ;
 
 valueRegister
-    : 'ValueRegister' name 'for' name '{' valueCluster* value* '}'
+    : 'ValueRegister' name ('for' name)? '{'
+      (valueCluster | value | valueEpic | valueNarrative | valueWeigthing)*
+      '}'
     ;
 
 valueCluster
-    : 'ValueCluster' name '{' valueClusterAttribute* value* '}'
+    : 'ValueCluster' name '{' (valueClusterAttribute | value | valueElicitation)* '}'
     ;
 
 valueClusterAttribute
-    : 'core' name
-    | 'demonstrator' STRING
+    : 'core' '='? (name | STRING)
+    | 'demonstrator' '='? STRING
+    | 'relatedValue' '='? STRING
+    | 'opposingValue' '='? STRING
     ;
 
 value
-    : 'Value' name '{' valueAttribute* valueStakeholder* '}'
+    : 'Value' name '{' (valueAttribute | valueElicitation)* '}'
     ;
 
 valueAttribute
-    : 'core' name
+    : 'core' '='? (name | STRING)
     | 'isCore'
-    | 'demonstrator' STRING
+    | 'demonstrator' '='? STRING
+    | 'relatedValue' '='? STRING
+    | 'opposingValue' '='? STRING
     ;
 
-valueStakeholder
-    : 'Stakeholder' name '{' stakeholderAttribute* '}'
+valueElicitation
+    : ('Stakeholder' | 'Stakeholders') name ('{' valueElicitationOption* '}')?
+    ;
+
+valueElicitationOption
+    : 'priority' '='? name
+    | 'impact' '='? name
+    | 'consequences' valueConsequenceEntry+
+    ;
+
+valueConsequenceEntry
+    : valueConsequence
+    | valueAction
+    ;
+
+valueConsequence
+    : ('good' | 'bad' | 'neutral') STRING
+    ;
+
+valueAction
+    : 'action' STRING (name | STRING)?
+    ;
+
+valueEpicClause
+    : 'realization' 'of' STRING
+    | 'reduction' 'of' STRING
+    ;
+
+valueEpic
+    : 'ValueEpic' name '{'
+      'As' ('a' | 'an')? name
+      'I' 'value' STRING 'as' 'demonstrated' 'in'
+      valueEpicClause+
+      '}'
+    ;
+
+valueNarrative
+    : 'ValueNarrative' name '{'
+      'When' 'the' 'SOI' 'executes' STRING ','
+      'stakeholders' 'expect' 'it' 'to'
+        (
+          'promote'
+          | 'promote,' 'protect' 'or' 'create'
+          | 'promote' ',' 'protect' 'or' 'create'
+        )
+      STRING ','?
+      'possibly' 'degrading' 'or' 'prohibiting' STRING
+      'with' 'the' 'following' 'externally' 'observable' 'and/or' 'internally' 'auditable' 'behavior:' STRING
+      '}'
+    ;
+
+valueWeigthing
+    : 'ValueWeigthing' name '{'
+      'In' 'the' 'context' 'of' 'the' 'SOI,'
+      'stakeholder' name
+      'values' STRING 'more' 'than' STRING
+      'expecting' 'benefits' 'such' 'as' STRING
+      'running' 'the' 'risk' 'of' 'harms' 'such' 'as' STRING
+      '}'
     ;
 
 rawStatement
-    : (~(';' | '{' | '}'))+ ';'?
+    : ~(';' | '{' | '}'
+        | 'Aggregate'
+        | 'BoundedContext'
+        | 'ContextMap'
+        | 'Domain'
+        | 'Subdomain'
+        | 'UseCase'
+        | 'UserStory'
+        | 'Stakeholders'
+        | 'ValueRegister'
+        | 'Application'
+        | 'Flow'
+        | 'Coordination'
+        | 'Module'
+        | 'Service'
+        | 'Repository'
+        | 'Resource'
+        | 'Consumer'
+        | 'Entity'
+        | 'ValueObject'
+        | 'DomainEvent'
+        | 'Event'
+        | 'CommandEvent'
+        | 'Command'
+        | 'DataTransferObject'
+        | 'Trait'
+        | 'BasicType'
+        | 'enum'
+      )
+      (~(';' | '{' | '}'))* ';'?
+    ;
+
+// --- ServiceCutter Configuration DSL (minimal support) ---
+
+serviceCutterElement
+    : scAggregate
+    | scEntity
+    | scSecurityAccessGroup
+    | scSeparatedSecurityZone
+    | scSharedOwnerGroup
+    | scPredefinedService
+    | scCompatibilities
+    | scUseCase
+    | scCharacteristic
+    ;
+
+scAggregate
+    : 'Aggregate' STRING '{' (STRING (',' STRING)*)? '}' ';'?
+    ;
+
+scEntity
+    : 'Entity' STRING '{' (STRING (',' STRING)*)? '}' ';'?
+    ;
+
+scSecurityAccessGroup
+    : 'SecurityAccessGroup' STRING '{' (STRING (',' STRING)*)? '}' ';'?
+    ;
+
+scSeparatedSecurityZone
+    : 'SeparatedSecurityZone' STRING '{' (STRING (',' STRING)*)? '}' ';'?
+    ;
+
+scSharedOwnerGroup
+    : 'SharedOwnerGroup' STRING '{' (STRING (',' STRING)*)? '}' ';'?
+    ;
+
+scPredefinedService
+    : 'PredefinedService' STRING '{' (STRING (',' STRING)*)? '}' ';'?
+    ;
+
+scCompatibilities
+    : 'Compatibilities' '{' (scCharacteristic)* '}'
+    ;
+
+scUseCase
+    : 'UseCase' name '{' scUseCaseElement* '}'
+    ;
+
+scUseCaseElement
+    : scIsLatencyCritical
+    | scReads
+    | scWrites
+    ;
+
+scIsLatencyCritical
+    : 'isLatencyCritical' '=' 'true'
+    ;
+
+scReads
+    : 'reads' scUseCaseNanoentities?
+    ;
+
+scWrites
+    : 'writes' scUseCaseNanoentities?
+    ;
+
+// Mirrors Xtext behavior: allows whitespace and comma-separated lists.
+scUseCaseNanoentities
+    : STRING (','? STRING)*
+    ;
+
+scCharacteristic
+    : scAvailabilityCriticality
+    | scConsistencyCriticality
+    | scContentVolatility
+    | scSecurityCriticality
+    | scStorageSimilarity
+    | scStructuralVolatility
+    ;
+
+scAvailabilityCriticality
+    : 'AvailabilityCriticality' '{' 'characteristic' name (scNanoentities)? '}'
+    ;
+
+scConsistencyCriticality
+    : 'ConsistencyCriticality' '{' 'characteristic' name (scNanoentities)? '}'
+    ;
+
+scContentVolatility
+    : 'ContentVolatility' '{' 'characteristic' name (scNanoentities)? '}'
+    ;
+
+scSecurityCriticality
+    : 'SecurityCriticality' '{' 'characteristic' name (scNanoentities)? '}'
+    ;
+
+scStorageSimilarity
+    : 'StorageSimilarity' '{' 'characteristic' name (scNanoentities)? '}'
+    ;
+
+scStructuralVolatility
+    : 'StructuralVolatility' '{' 'characteristic' name (scNanoentities)? '}'
+    ;
+
+scNanoentities
+    : STRING (',' STRING)*
     ;
 
 // --- Helpers ---
@@ -575,8 +1345,16 @@ idList
     : name (',' name)*
     ;
 
+qualifiedNameList
+    : qualifiedName (',' qualifiedName)*
+    ;
+
 qualifiedName
     : name ('.' name)*
+    ;
+
+channelIdentifier
+    : name (('.' | '/' | ':') name)*
     ;
 
 // --- Lexer Rules ---
@@ -585,6 +1363,8 @@ qualifiedName
 READ : 'read';
 WITH : 'with';
 ITS : 'its';
+
+INT : [0-9]+;
 
 ID
     : '^'? [a-zA-Z_] [a-zA-Z0-9_]*
