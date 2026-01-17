@@ -73,7 +73,10 @@ class CMLModelBuilder(CMLVisitor):
         self.context_map_obj_map = {} # Name -> Context
         self.subdomain_map = {} # Name -> Subdomain
         self.domain_map = {}  # Name -> Domain
-        
+
+        # Import statements collected during parsing
+        self.imports = []  # List of import paths (strings)
+
         # Deferred linking
         self.deferred_context_map_links = [] # (ContextMap, [names])
         self.deferred_context_links = [] # (Context, [implements_names])
@@ -224,12 +227,18 @@ class CMLModelBuilder(CMLVisitor):
                     target_obj.associations.append(new_assoc)
                     existing_assoc_keys.add(key)
 
+    def visitImports(self, ctx: CMLParser.ImportsContext):
+        """Collect import statement paths for later resolution."""
+        import_path = self._strip_quotes(ctx.STRING().getText())
+        self.imports.append(import_path)
+        return None
+
     def visitDefinitions(self, ctx: CMLParser.DefinitionsContext):
         try:
             self.visitChildren(ctx)
         except Exception as e:
             raise e
-        
+
         # Post-processing: Link contexts and subdomains
         self._link_references()
         # Attach service cutter config if any content was collected
