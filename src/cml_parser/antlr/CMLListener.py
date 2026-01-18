@@ -1,4 +1,4 @@
-# Generated from CML.g4 by ANTLR 4.13.2
+# Generated from src/cml_parser/CML.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .CMLParser import CMLParser
@@ -575,12 +575,21 @@ class CMLListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by CMLParser#attribute.
-    def enterAttribute(self, ctx:CMLParser.AttributeContext):
+    # Enter a parse tree produced by CMLParser#javaStyleAttribute.
+    def enterJavaStyleAttribute(self, ctx:CMLParser.JavaStyleAttributeContext):
         pass
 
-    # Exit a parse tree produced by CMLParser#attribute.
-    def exitAttribute(self, ctx:CMLParser.AttributeContext):
+    # Exit a parse tree produced by CMLParser#javaStyleAttribute.
+    def exitJavaStyleAttribute(self, ctx:CMLParser.JavaStyleAttributeContext):
+        pass
+
+
+    # Enter a parse tree produced by CMLParser#kotlinStyleAttribute.
+    def enterKotlinStyleAttribute(self, ctx:CMLParser.KotlinStyleAttributeContext):
+        pass
+
+    # Exit a parse tree produced by CMLParser#kotlinStyleAttribute.
+    def exitKotlinStyleAttribute(self, ctx:CMLParser.KotlinStyleAttributeContext):
         pass
 
 
@@ -854,12 +863,21 @@ class CMLListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by CMLParser#parameter.
-    def enterParameter(self, ctx:CMLParser.ParameterContext):
+    # Enter a parse tree produced by CMLParser#javaStyleParameter.
+    def enterJavaStyleParameter(self, ctx:CMLParser.JavaStyleParameterContext):
         pass
 
-    # Exit a parse tree produced by CMLParser#parameter.
-    def exitParameter(self, ctx:CMLParser.ParameterContext):
+    # Exit a parse tree produced by CMLParser#javaStyleParameter.
+    def exitJavaStyleParameter(self, ctx:CMLParser.JavaStyleParameterContext):
+        pass
+
+
+    # Enter a parse tree produced by CMLParser#kotlinStyleParameter.
+    def enterKotlinStyleParameter(self, ctx:CMLParser.KotlinStyleParameterContext):
+        pass
+
+    # Exit a parse tree produced by CMLParser#kotlinStyleParameter.
+    def exitKotlinStyleParameter(self, ctx:CMLParser.KotlinStyleParameterContext):
         pass
 
 

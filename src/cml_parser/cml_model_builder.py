@@ -999,13 +999,8 @@ class CMLModelBuilder(CMLVisitor):
 
     def visitSubdomain(self, ctx: CMLParser.SubdomainContext):
         name = ctx.name().getText()
+        # Type is set via subdomainAttribute inside the body, not directly on subdomain
         sd_type = SubdomainType.UNDEFINED if hasattr(SubdomainType, "UNDEFINED") else SubdomainType.GENERIC
-        if ctx.subdomainType():
-            type_str = ctx.subdomainType().getText()
-            try:
-                sd_type = SubdomainType(type_str)
-            except ValueError:  # pragma: no cover (grammar restricts values)
-                pass
 
         subdomain = Subdomain(name=name, type=sd_type, vision="", domain=self.current_domain)
         self.subdomain_map[name] = subdomain
@@ -1415,17 +1410,27 @@ class CMLModelBuilder(CMLVisitor):
             self.current_tactic_application.domain_objects.append(basic_type)
         return basic_type
 
-    def visitAttribute(self, ctx: CMLParser.AttributeContext):
-        name = ctx.name().getText()
-        type_name = ctx.type_().getText()
-        
+    def _process_attribute(self, ctx):
+        """Shared logic for processing attributes in both Java and Kotlin style.
+
+        Both JavaStyleAttributeContext and KotlinStyleAttributeContext have:
+        - attrName: NameContext
+        - attrType: TypeContext
+        - reference: Token (optional)
+        - visibility(): VisibilityContext (optional)
+        - attributeOption(): list of AttributeOptionContext
+        - attributeAssociationLabel(): AttributeAssociationLabelContext (optional)
+        """
+        name = ctx.attrName.getText()
+        type_name = ctx.attrType.getText()
+
         attr = Attribute(name=name, type=type_name)
-        
+
         if ctx.reference:
             attr.is_reference = True
         if ctx.visibility():
             attr.visibility = ctx.visibility().getText()
-        
+
         for child in ctx.getChildren():
             if child.getText() == 'key':
                 attr.is_key = True
@@ -1437,7 +1442,7 @@ class CMLModelBuilder(CMLVisitor):
 
         if ctx.attributeAssociationLabel() and ctx.attributeAssociationLabel().STRING():
             attr.association_label = self._strip_quotes(ctx.attributeAssociationLabel().STRING().getText())
-        
+
         if hasattr(self, 'current_entity') and self.current_entity:
             self.current_entity.attributes.append(attr)
         elif hasattr(self, 'current_value_object') and self.current_value_object:
@@ -1446,8 +1451,16 @@ class CMLModelBuilder(CMLVisitor):
             self.current_domain_event.attributes.append(attr)
         elif hasattr(self, 'current_association_holder') and self.current_association_holder:
             self.current_association_holder.attributes.append(attr)
-            
+
         return attr
+
+    def visitJavaStyleAttribute(self, ctx: CMLParser.JavaStyleAttributeContext):
+        """Visit Java-style attribute: - Type name"""
+        return self._process_attribute(ctx)
+
+    def visitKotlinStyleAttribute(self, ctx: CMLParser.KotlinStyleAttributeContext):
+        """Visit Kotlin-style attribute: - name: Type"""
+        return self._process_attribute(ctx)
 
     def visitAssociation(self, ctx: CMLParser.AssociationContext):
         description = self._strip_quotes(ctx.STRING().getText()) if ctx.STRING() else None
@@ -1514,10 +1527,12 @@ class CMLModelBuilder(CMLVisitor):
             op.is_abstract = True
 
         # Parameters (only possible for the with-params form)
+        # Supports both Java-style (Type name) and Kotlin-style (name: Type)
         if hasattr(op_ctx, "parameterList") and op_ctx.parameterList():
             for param_ctx in op_ctx.parameterList().parameter():
-                p_name = param_ctx.name().getText()
-                p_type = param_ctx.type_().getText()
+                # Use labeled elements: paramName and paramType
+                p_name = param_ctx.paramName.getText() if param_ctx.paramName else param_ctx.name().getText()
+                p_type = param_ctx.paramType.getText() if param_ctx.paramType else param_ctx.type_().getText()
                 is_ref = "@" in param_ctx.getText()
                 op.parameters.append(Parameter(name=p_name, type=p_type, is_reference=is_ref))
 
@@ -1972,8 +1987,9 @@ class CMLModelBuilder(CMLVisitor):
             
         if ctx.parameterList():
             for param_ctx in ctx.parameterList().parameter():
-                p_name = param_ctx.name().getText()
-                p_type = param_ctx.type_().getText()
+                # Use labeled elements: paramName and paramType
+                p_name = param_ctx.paramName.getText() if param_ctx.paramName else param_ctx.name().getText()
+                p_type = param_ctx.paramType.getText() if param_ctx.paramType else param_ctx.type_().getText()
                 is_ref = '@' in param_ctx.getText()
                 op.parameters.append(Parameter(name=p_name, type=p_type, is_reference=is_ref))
                 

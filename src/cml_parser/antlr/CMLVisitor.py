@@ -1,4 +1,4 @@
-# Generated from CML.g4 by ANTLR 4.13.2
+# Generated from src/cml_parser/CML.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .CMLParser import CMLParser
@@ -324,8 +324,13 @@ class CMLVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CMLParser#attribute.
-    def visitAttribute(self, ctx:CMLParser.AttributeContext):
+    # Visit a parse tree produced by CMLParser#javaStyleAttribute.
+    def visitJavaStyleAttribute(self, ctx:CMLParser.JavaStyleAttributeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CMLParser#kotlinStyleAttribute.
+    def visitKotlinStyleAttribute(self, ctx:CMLParser.KotlinStyleAttributeContext):
         return self.visitChildren(ctx)
 
 
@@ -479,8 +484,13 @@ class CMLVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CMLParser#parameter.
-    def visitParameter(self, ctx:CMLParser.ParameterContext):
+    # Visit a parse tree produced by CMLParser#javaStyleParameter.
+    def visitJavaStyleParameter(self, ctx:CMLParser.JavaStyleParameterContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CMLParser#kotlinStyleParameter.
+    def visitKotlinStyleParameter(self, ctx:CMLParser.KotlinStyleParameterContext):
         return self.visitChildren(ctx)
 
 

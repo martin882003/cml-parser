@@ -425,8 +425,10 @@ association
     ;
 
 // Explicit attribute rule to avoid ambiguity
+// Supports both Java-style (- Type name) and Kotlin-style (- name: Type)
 attribute
-    : STRING? visibility? reference=('-' | 'reference')? type name 'key'? attributeOption* attributeAssociationLabel? ';'?
+    : STRING? visibility? reference=('-' | 'reference')? attrType=type attrName=name 'key'? attributeOption* attributeAssociationLabel? ';'?  #javaStyleAttribute
+    | STRING? visibility? reference=('-' | 'reference')? attrName=name ':' attrType=type 'key'? attributeOption* attributeAssociationLabel? ';'?  #kotlinStyleAttribute
     ;
 
 attributeAssociationLabel
@@ -643,8 +645,10 @@ moduleAttribute
     | 'hint' '=' STRING
     ;
 
+// Supports both Java-style (Type name) and Kotlin-style (name: Type)
 parameter
-    : '@'? type name
+    : '@'? paramType=type paramName=name      #javaStyleParameter
+    | '@'? paramName=name ':' paramType=type  #kotlinStyleParameter
     ;
 
 parameterList
